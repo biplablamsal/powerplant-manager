@@ -1,0 +1,1972 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Replace the existing viewport meta tag with this -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+    <style>
+  `
+    </style>
+    <title>HydroPlant Manager — Operations & Maintenance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Additional mobile fixes */
+        @media (max-width: 768px) {
+            /* Ensure no horizontal overflow */
+            body {
+            overflow-x: hidden;
+            position: relative;
+            }
+            
+            .main-wrap {
+            overflow-x: hidden;
+            }
+            
+            /* Fix sidebar overlay */
+            .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+            }
+            
+            .sidebar-overlay.active {
+            display: block;
+            }
+            
+            /* Disable body scroll when sidebar open */
+            body.sidebar-open {
+            overflow: hidden;
+            }
+            
+            /* Smaller sidebar fonts */
+            .sidebar .nav-item {
+            font-size: 12px !important;
+            padding: 8px 12px !important;
+            }
+            
+            .sidebar .nav-text {
+            font-size: 12px !important;
+            }
+            
+            .sidebar .nav-label {
+            font-size: 8px !important;
+            }
+            
+            .sidebar .user-name {
+            font-size: 11px !important;
+            }
+            
+            .sidebar .logo-text .name {
+            font-size: 13px !important;
+            }
+            
+            /* Make tables more readable */
+            .data-table td, 
+            .faults-table td, 
+            .gen-table td,
+            .maint-table td {
+            padding: 8px 10px;
+            font-size: 11px;
+            }
+            
+            .data-table th,
+            .faults-table th,
+            .gen-table th,
+            .maint-table th {
+            padding: 8px 10px;
+            font-size: 10px;
+            }
+        }
+        </style>
+  </head>
+  <body>
+    <!-- SIDEBAR (same as before - keeping it short here) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon"><i class="fas fa-water"></i></div>
+        <div class="logo-text">
+          <div class="name">HydroPlant</div>
+          <div class="sub">Manager v2.4</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-label">Overview</div>
+          <a class="nav-item active" onclick="showPage('dashboard', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span
+            ><span class="nav-text">Dashboard</span></a
+          >
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Operations</div>
+          <a class="nav-item" onclick="showPage('operations', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-bolt"></i></span
+            ><span class="nav-text">Operations</span></a
+          >
+          <a class="nav-item" onclick="showPage('generation', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-chart-area"></i></span
+            ><span class="nav-text">Generation Log</span></a
+          >
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Maintenance</div>
+          <a class="nav-item" onclick="showPage('maintenance', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-tools"></i></span
+            ><span class="nav-text">Maintenance</span
+            ><span class="nav-badge">3</span></a
+          >
+          <a class="nav-item" onclick="showPage('workorders', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-clipboard-list"></i></span
+            ><span class="nav-text">Work Orders</span></a
+          >
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Assets</div>
+          <a class="nav-item" onclick="showPage('equipment', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-cogs"></i></span
+            ><span class="nav-text">Equipment</span></a
+          >
+          <a class="nav-item" onclick="showPage('faults', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"
+              ><i class="fas fa-exclamation-triangle"></i></span
+            ><span class="nav-text">Faults & Incidents</span
+            ><span class="nav-badge">2</span></a
+          >
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">Store</div>
+          <a class="nav-item" onclick="showPage('inventory', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-boxes"></i></span
+            ><span class="nav-text">Inventory</span></a
+          >
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">System</div>
+          <a class="nav-item" onclick="showPage('documents', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-folder-open"></i></span
+            ><span class="nav-text">Documents</span></a
+          >
+          <a class="nav-item" onclick="showPage('reports', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-file-alt"></i></span
+            ><span class="nav-text">Reports</span></a
+          >
+          <a class="nav-item" onclick="showPage('users', this)"
+            ><span class="active-indicator"></span
+            ><span class="nav-icon"><i class="fas fa-users-cog"></i></span
+            ><span class="nav-text">User Management</span></a
+          >
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="user-avatar">RK</div>
+          <div class="user-info">
+            <div class="user-name">Rajesh Kumar</div>
+            <div class="user-role">Plant Incharge</div>
+          </div>
+          <i
+            class="fas fa-ellipsis-v"
+            style="color: var(--text-muted); font-size: 12px; margin-left: auto"
+          ></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN WRAP -->
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-toggle" onclick="toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </div>
+        <div class="topbar-breadcrumb">
+          <span>HydroPlant</span
+          ><i class="fas fa-chevron-right" style="font-size: 9px"></i
+          ><span class="current" id="breadcrumb">Dashboard</span>
+        </div>
+        <div class="topbar-search">
+          <i class="fas fa-search"></i
+          ><input
+            type="text"
+            placeholder="Search equipment, faults, work orders..."
+          />
+        </div>
+        <div class="topbar-actions">
+          <div class="plant-status-badge">
+            <span class="pulse"></span>PLANT ONLINE
+          </div>
+          <div style="position: relative">
+            <div class="icon-btn" onclick="toggleNotif()">
+              <i class="fas fa-bell"></i><span class="dot"></span>
+            </div>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-header">
+                <h4>Notifications</h4>
+                <span class="notif-clear">Clear all</span>
+              </div>
+              <div class="notif-item">
+                <div
+                  class="notif-icon"
+                  style="background: rgba(226, 75, 74, 0.12); color: #e24b4a"
+                >
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="notif-content">
+                  <div class="notif-title">Unit 2 Bearing Temperature High</div>
+                  <div class="notif-desc">
+                    Generator bearing temp exceeded 78°C threshold.
+                  </div>
+                  <div class="notif-time">6 min ago</div>
+                </div>
+              </div>
+              <div class="notif-item">
+                <div
+                  class="notif-icon"
+                  style="background: rgba(245, 174, 58, 0.1); color: #f5ae3a"
+                >
+                  <i class="fas fa-tools"></i>
+                </div>
+                <div class="notif-content">
+                  <div class="notif-title">PM Due: Unit 3 Governor Service</div>
+                  <div class="notif-desc">Scheduled in 2 days.</div>
+                  <div class="notif-time">1 hr ago</div>
+                </div>
+              </div>
+              <div class="notif-item">
+                <div
+                  class="notif-icon"
+                  style="background: rgba(74, 157, 232, 0.1); color: #4a9de8"
+                >
+                  <i class="fas fa-boxes"></i>
+                </div>
+                <div class="notif-content">
+                  <div class="notif-title">Low Stock Alert: Bearing 6312</div>
+                  <div class="notif-desc">Only 2 units remaining.</div>
+                  <div class="notif-time">3 hrs ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+            <i class="fas fa-adjust"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE: DASHBOARD (simplified for brevity - but complete in your original) -->
+      <div class="page-content page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Plant Dashboard</div>
+            <div class="page-subtitle">
+              Kulekhani Hydropower Plant · Unit Status & Live Overview ·
+              <span id="live-time"></span>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm">
+              <i class="fas fa-download"></i> Export</button
+            ><button class="btn btn-primary btn-sm">
+              <i class="fas fa-plus"></i> Log Entry
+            </button>
+          </div>
+        </div>
+        <div class="kpi-grid">
+          <div
+            class="kpi-card"
+            style="
+              --kpi-color: var(--accent-teal);
+              --kpi-bg: rgba(41, 196, 143, 0.1);
+            "
+          >
+            <div class="kpi-icon"><i class="fas fa-bolt"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-label">Today's Generation</div>
+              <div class="kpi-value">142<span class="kpi-unit">MWh</span></div>
+              <span class="kpi-delta up"
+                ><i class="fas fa-arrow-up"></i> +6.2% vs yesterday</span
+              >
+            </div>
+          </div>
+          <div
+            class="kpi-card"
+            style="
+              --kpi-color: var(--accent-blue);
+              --kpi-bg: rgba(74, 157, 232, 0.1);
+            "
+          >
+            <div class="kpi-icon"><i class="fas fa-tachometer-alt"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-label">Current Load</div>
+              <div class="kpi-value">38.4<span class="kpi-unit">MW</span></div>
+              <span class="kpi-delta up"
+                ><i class="fas fa-arrow-up"></i> 87% of capacity</span
+              >
+            </div>
+          </div>
+          <div
+            class="kpi-card"
+            style="
+              --kpi-color: var(--accent-amber);
+              --kpi-bg: rgba(245, 174, 58, 0.1);
+            "
+          >
+            <div class="kpi-icon"><i class="fas fa-water"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-label">Water Discharge</div>
+              <div class="kpi-value">
+                84.3<span class="kpi-unit">m³/s</span>
+              </div>
+              <span class="kpi-delta neutral"
+                ><i class="fas fa-minus"></i> stable</span
+              >
+            </div>
+          </div>
+          <div
+            class="kpi-card"
+            style="--kpi-color: #9f7aea; --kpi-bg: rgba(159, 122, 234, 0.1)"
+          >
+            <div
+              class="kpi-icon"
+              style="color: #9f7aea; background: rgba(159, 122, 234, 0.1)"
+            >
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="kpi-info">
+              <div class="kpi-label">Running Units</div>
+              <div class="kpi-value">3<span class="kpi-unit">/ 4</span></div>
+              <span class="kpi-delta neutral"
+                ><i class="fas fa-wrench"></i> U2 on maintenance</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="card span-2">
+            <div class="card-header">
+              <div class="card-title">
+                <i
+                  class="fas fa-chart-area text-blue"
+                  style="margin-right: 8px"
+                ></i
+                >24-Hour Generation Trend
+              </div>
+              <div class="flex gap-8">
+                <button class="btn btn-secondary btn-sm">Daily</button
+                ><button class="btn btn-secondary btn-sm">Weekly</button
+                ><button class="btn btn-secondary btn-sm">Monthly</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container"><canvas id="genChart"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i
+                  class="fas fa-layer-group text-teal"
+                  style="margin-right: 8px"
+                ></i
+                >Unit Status
+              </div>
+              <span class="badge badge-green">Live</span>
+            </div>
+            <div class="card-body">
+              <div class="unit-list">
+                <div class="unit-row">
+                  <div class="unit-led running"></div>
+                  <div class="unit-name">Unit 1</div>
+                  <div class="unit-load">
+                    <div style="font-size: 10px; color: var(--text-muted)">
+                      Load
+                    </div>
+                    <div class="unit-load-bar">
+                      <div class="unit-load-fill" style="width: 88%"></div>
+                    </div>
+                  </div>
+                  <div class="unit-mw">12.4 MW</div>
+                  <span class="unit-status-badge running">Running</span>
+                </div>
+                <div class="unit-row">
+                  <div class="unit-led warning"></div>
+                  <div class="unit-name">Unit 2</div>
+                  <div class="unit-load">
+                    <div style="font-size: 10px; color: var(--text-muted)">
+                      Load
+                    </div>
+                    <div class="unit-load-bar">
+                      <div class="unit-load-fill" style="width: 0%"></div>
+                    </div>
+                  </div>
+                  <div class="unit-mw">0.0 MW</div>
+                  <span class="unit-status-badge maint">Maint.</span>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr 1fr;
+                  gap: 12px;
+                  text-align: center;
+                "
+              >
+                <div class="gauge-wrap">
+                  <canvas id="g1" width="80" height="80"></canvas>
+                  <div class="gauge-val">84°</div>
+                  <div class="gauge-lbl">U1 Bearing</div>
+                </div>
+                <div class="gauge-wrap">
+                  <canvas id="g2" width="80" height="80"></canvas>
+                  <div class="gauge-val">91°</div>
+                  <div class="gauge-lbl">U3 Bearing</div>
+                </div>
+                <div class="gauge-wrap">
+                  <canvas id="g3" width="80" height="80"></canvas>
+                  <div class="gauge-val">50.1</div>
+                  <div class="gauge-lbl">Freq. Hz</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: USERS (complete user table) -->
+      <div class="page-content page" id="page-users">
+        <div class="page-header">
+          <div>
+            <div class="page-title">User Management</div>
+            <div class="page-subtitle">Role-based Access Control</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">
+              <i class="fas fa-user-plus"></i> Add User
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">System Users</div>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Shift</th>
+                  <th>Last Login</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <div
+                        class="user-avatar"
+                        style="width: 28px; height: 28px; font-size: 10px"
+                      >
+                        RK
+                      </div>
+                      <span class="bold">Rajesh Kumar</span>
+                    </div>
+                  </td>
+                  <td>r.kumar@hydroplant.np</td>
+                  <td><span class="badge badge-blue">Plant Incharge</span></td>
+                  <td>A</td>
+                  <td>Today 06:02</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td>
+                    <div class="flex gap-8">
+                      <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i></button
+                      ><button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <div
+                        class="user-avatar"
+                        style="
+                          width: 28px;
+                          height: 28px;
+                          font-size: 10px;
+                          background: linear-gradient(135deg, #854f0b, #ef9f27);
+                        "
+                      >
+                        PT
+                      </div>
+                      <span class="bold">Prakash Thapa</span>
+                    </div>
+                  </td>
+                  <td>p.thapa@hydroplant.np</td>
+                  <td><span class="badge badge-amber">Engineer</span></td>
+                  <td>A</td>
+                  <td>Today 06:10</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td>
+                    <div class="flex gap-8">
+                      <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i></button
+                      ><button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <div
+                        class="user-avatar"
+                        style="
+                          width: 28px;
+                          height: 28px;
+                          font-size: 10px;
+                          background: linear-gradient(135deg, #0f6e56, #29c48f);
+                        "
+                      >
+                        SG
+                      </div>
+                      <span class="bold">Suresh Gurung</span>
+                    </div>
+                  </td>
+                  <td>s.gurung@hydroplant.np</td>
+                  <td><span class="badge badge-green">Operator</span></td>
+                  <td>C</td>
+                  <td>Yesterday 22:05</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td>
+                    <div class="flex gap-8">
+                      <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i></button
+                      ><button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <div
+                        class="user-avatar"
+                        style="
+                          width: 28px;
+                          height: 28px;
+                          font-size: 10px;
+                          background: linear-gradient(135deg, #3b6d11, #639922);
+                        "
+                      >
+                        AA
+                      </div>
+                      <span class="bold">Anil Adhikari</span>
+                    </div>
+                  </td>
+                  <td>a.adhikari@hydroplant.np</td>
+                  <td><span class="badge badge-green">Operator</span></td>
+                  <td>B</td>
+                  <td>Yesterday 14:00</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td>
+                    <div class="flex gap-8">
+                      <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i></button
+                      ><button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <div
+                        class="user-avatar"
+                        style="
+                          width: 28px;
+                          height: 28px;
+                          font-size: 10px;
+                          background: linear-gradient(135deg, #533689, #9f7aea);
+                        "
+                      >
+                        DL
+                      </div>
+                      <span class="bold">Dinesh Limbu</span>
+                    </div>
+                  </td>
+                  <td>d.limbu@hydroplant.np</td>
+                  <td>
+                    <span
+                      class="badge"
+                      style="
+                        color: #9f7aea;
+                        background: rgba(159, 122, 234, 0.1);
+                      "
+                      >Store Keeper</span
+                    >
+                  </td>
+                  <td>—</td>
+                  <td>Today 08:30</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td>
+                    <div class="flex gap-8">
+                      <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i></button
+                      ><button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <div
+                        class="user-avatar"
+                        style="
+                          width: 28px;
+                          height: 28px;
+                          font-size: 10px;
+                          background: linear-gradient(135deg, #185fa5, #4a9de8);
+                        "
+                      >
+                        AD
+                      </div>
+                      <span class="bold">Admin System</span>
+                    </div>
+                  </td>
+                  <td>admin@hydroplant.np</td>
+                  <td><span class="badge badge-red">Admin</span></td>
+                  <td>—</td>
+                  <td>2024-01-14 17:30</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                  <td>
+                    <div class="flex gap-8">
+                      <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i></button
+                      ><button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+            <!-- PAGE: MAINTENANCE (Enhanced Dashboard) -->
+      <div class="page-content page" id="page-maintenance">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Maintenance Dashboard</div>
+            <div class="page-subtitle">
+              Preventive Maintenance · Asset Health Tracking · Downtime Analytics
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm" id="maintUploadBtn">
+              <i class="fas fa-cloud-upload-alt"></i> Import Excel
+            </button>
+            <button class="btn btn-secondary btn-sm" id="maintExportBtn">
+              <i class="fas fa-download"></i> Export Report
+            </button>
+            <input type="file" id="maintFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="maint-stats-grid">
+          <div class="maint-stat-card overdue">
+            <div class="maint-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="maint-stat-value" id="statOverdue">0</div>
+            <div class="maint-stat-label">Overdue Tasks</div>
+          </div>
+          <div class="maint-stat-card upcoming">
+            <div class="maint-stat-icon"><i class="fas fa-calendar-week"></i></div>
+            <div class="maint-stat-value" id="statDueWeek">0</div>
+            <div class="maint-stat-label">Due This Week</div>
+          </div>
+          <div class="maint-stat-card mtbf">
+            <div class="maint-stat-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="maint-stat-value" id="statMTBF">1,240</div>
+            <div class="maint-stat-label">MTBF (hours)</div>
+          </div>
+          <div class="maint-stat-card availability">
+            <div class="maint-stat-icon"><i class="fas fa-percent"></i></div>
+            <div class="maint-stat-value" id="statAvailability">96.2<span style="font-size:14px">%</span></div>
+            <div class="maint-stat-label">Plant Availability</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="maint-tabs">
+          <button class="maint-tab active" data-tab="schedule"><i class="fas fa-list-check"></i> PM Schedule</button>
+          <button class="maint-tab" data-tab="health"><i class="fas fa-heartbeat"></i> Asset Health</button>
+          <button class="maint-tab" data-tab="history"><i class="fas fa-history"></i> Maintenance History</button>
+          <button class="maint-tab" data-tab="analytics"><i class="fas fa-chart-pie"></i> Analytics</button>
+        </div>
+
+        <!-- Tab Content: PM Schedule -->
+        <div class="maint-tab-content active" id="tabSchedule">
+          <div class="two-col">
+            <!-- PM Tasks List -->
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title"><i class="fas fa-clipboard-list"></i> Preventive Maintenance Schedule</div>
+                <button class="btn-icon" onclick="addMaintenanceTask()"><i class="fas fa-plus"></i></button>
+              </div>
+              <div class="maint-card-body">
+                <div class="pm-task-list" id="pmTaskList">
+                  <!-- Tasks loaded dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title"><i class="fas fa-calendar-alt"></i> Due Calendar</div>
+                <div class="calendar-nav">
+                  <button class="btn-icon-sm" id="prevWeek"><i class="fas fa-chevron-left"></i></button>
+                  <span id="calendarWeekLabel">This Week</span>
+                  <button class="btn-icon-sm" id="nextWeek"><i class="fas fa-chevron-right"></i></button>
+                </div>
+              </div>
+              <div class="maint-card-body">
+                <div class="calendar-grid" id="calendarGrid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content: Asset Health -->
+        <div class="maint-tab-content" id="tabHealth">
+          <div class="two-col">
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title"><i class="fas fa-microchip"></i> Asset Health Score</div>
+              </div>
+              <div class="maint-card-body">
+                <div class="asset-health-list" id="assetHealthList"></div>
+              </div>
+            </div>
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title"><i class="fas fa-chart-simple"></i> Health Trend</div>
+              </div>
+              <div class="maint-card-body">
+                <canvas id="healthTrendChart" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content: Maintenance History -->
+        <div class="maint-tab-content" id="tabHistory">
+          <div class="maint-card">
+            <div class="maint-card-header">
+              <div class="maint-card-title"><i class="fas fa-database"></i> Maintenance History Log</div>
+              <div class="filter-group">
+                <select id="historyFilterAsset" class="filter-select">
+                  <option value="all">All Assets</option>
+                  <option value="Unit 1">Unit 1</option>
+                  <option value="Unit 2">Unit 2</option>
+                  <option value="Transformer">Transformer</option>
+                  <option value="Turbine">Turbine</option>
+                </select>
+              </div>
+            </div>
+            <div class="maint-card-body">
+              <div class="table-wrapper">
+                <table class="maint-table" id="historyTable">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Asset</th>
+                      <th>Work Order</th>
+                      <th>Task</th>
+                      <th>Duration</th>
+                      <th>Downtime</th>
+                      <th>Technician</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content: Analytics -->
+        <div class="maint-tab-content" id="tabAnalytics">
+          <div class="two-col">
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title"><i class="fas fa-clock"></i> Downtime by Cause (Hours)</div>
+              </div>
+              <div class="maint-card-body">
+                <canvas id="downtimeChart" height="220"></canvas>
+              </div>
+            </div>
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title"><i class="fas fa-chart-line"></i> MTBF Trend</div>
+              </div>
+              <div class="maint-card-body">
+                <canvas id="mtbfTrendChart" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="maint-card">
+            <div class="maint-card-header">
+              <div class="maint-card-title"><i class="fas fa-chart-bar"></i> Maintenance Cost Analysis</div>
+            </div>
+            <div class="maint-card-body">
+              <canvas id="costChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Uploaded Files Info -->
+        <div class="maint-files-card" id="maintFilesCard" style="display:none">
+          <div class="maint-card-header">
+            <div class="maint-card-title"><i class="fas fa-file-excel"></i> Imported Data</div>
+            <button class="btn-clear" id="clearMaintData">Clear All</button>
+          </div>
+          <div class="maint-card-body" id="maintFileList"></div>
+        </div>
+      </div>
+            <!-- PAGE: EQUIPMENT (Asset Registry) -->
+      <div class="page-content page" id="page-equipment">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Equipment Registry</div>
+            <div class="page-subtitle">
+              Master Asset List · Technical Specifications · Maintenance History
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm" id="equipUploadBtn">
+              <i class="fas fa-cloud-upload-alt"></i> Import Excel
+            </button>
+            <button class="btn btn-secondary btn-sm" id="equipExportBtn">
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-teal btn-sm" id="equipAddBtn">
+              <i class="fas fa-plus"></i> Add Equipment
+            </button>
+            <input type="file" id="equipFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+          </div>
+        </div>
+
+        <!-- Equipment Stats -->
+        <div class="equip-stats-grid">
+          <div class="equip-stat-card">
+            <div class="equip-stat-icon"><i class="fas fa-microchip"></i></div>
+            <div class="equip-stat-value" id="totalEquipment">0</div>
+            <div class="equip-stat-label">Total Assets</div>
+          </div>
+          <div class="equip-stat-card">
+            <div class="equip-stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="equip-stat-value" id="operationalCount">0</div>
+            <div class="equip-stat-label">Operational</div>
+          </div>
+          <div class="equip-stat-card">
+            <div class="equip-stat-icon"><i class="fas fa-tools"></i></div>
+            <div class="equip-stat-value" id="maintenanceCount">0</div>
+            <div class="equip-stat-label">Under Maintenance</div>
+          </div>
+          <div class="equip-stat-card">
+            <div class="equip-stat-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="equip-stat-value" id="avgHealth">0<span style="font-size:14px">%</span></div>
+            <div class="equip-stat-label">Avg Health Score</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="equip-filter-bar">
+          <div class="filter-group">
+            <input type="text" id="equipSearch" placeholder="Search equipment..." class="search-input">
+            <select id="equipTypeFilter" class="filter-select">
+              <option value="all">All Types</option>
+              <option value="Generator">Generators</option>
+              <option value="Turbine">Turbines</option>
+              <option value="Transformer">Transformers</option>
+              <option value="Governor">Governors</option>
+              <option value="Valve">Valves</option>
+              <option value="Pump">Pumps</option>
+            </select>
+            <select id="equipStatusFilter" class="filter-select">
+              <option value="all">All Status</option>
+              <option value="Operational">Operational</option>
+              <option value="Maintenance">Under Maintenance</option>
+              <option value="Standby">Standby</option>
+              <option value="Outage">Outage</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Equipment Grid -->
+        <div class="equip-grid" id="equipmentGrid"></div>
+
+        <!-- Equipment Detail Modal (hidden by default) -->
+        <div class="equip-modal" id="equipModal" style="display:none">
+          <div class="equip-modal-content">
+            <div class="equip-modal-header">
+              <h3 id="modalTitle">Equipment Details</h3>
+              <button class="modal-close" onclick="closeEquipModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="equip-modal-body" id="modalBody"></div>
+            <div class="equip-modal-footer">
+              <button class="btn btn-secondary" onclick="closeEquipModal()">Close</button>
+              <button class="btn btn-primary" id="editEquipBtn">Edit Equipment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+            <!-- PAGE: FAULTS & INCIDENTS -->
+      <div class="page-content page" id="page-faults">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Faults & Incidents</div>
+            <div class="page-subtitle">
+              Track equipment failures, alarms, and unplanned events
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm" id="faultUploadBtn">
+              <i class="fas fa-cloud-upload-alt"></i> Import Excel
+            </button>
+            <button class="btn btn-secondary btn-sm" id="faultExportBtn">
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-teal btn-sm" id="faultAddBtn">
+              <i class="fas fa-plus"></i> Log Fault
+            </button>
+            <input type="file" id="faultFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+          </div>
+        </div>
+
+        <!-- Fault Statistics Cards -->
+        <div class="fault-stats-grid">
+          <div class="fault-stat-card">
+            <div class="fault-stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="fault-stat-value" id="openFaults">0</div>
+            <div class="fault-stat-label">Open Faults</div>
+          </div>
+          <div class="fault-stat-card critical-stat">
+            <div class="fault-stat-icon"><i class="fas fa-skull-crosswalk"></i></div>
+            <div class="fault-stat-value" id="criticalFaults">0</div>
+            <div class="fault-stat-label">Critical / High</div>
+          </div>
+          <div class="fault-stat-card">
+            <div class="fault-stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="fault-stat-value" id="mttrValue">0</div>
+            <div class="fault-stat-label">MTTR (hours)</div>
+          </div>
+          <div class="fault-stat-card">
+            <div class="fault-stat-icon"><i class="fas fa-chart-pie"></i></div>
+            <div class="fault-stat-value" id="topFaultType">-</div>
+            <div class="fault-stat-label">Most Frequent</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="fault-filter-bar">
+          <div class="filter-group">
+            <input type="text" id="faultSearch" placeholder="Search faults..." class="search-input">
+            <select id="faultEquipmentFilter" class="filter-select">
+              <option value="all">All Equipment</option>
+            </select>
+            <select id="faultSeverityFilter" class="filter-select">
+              <option value="all">All Severity</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <select id="faultStatusFilter" class="filter-select">
+              <option value="all">All Status</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
+            </select>
+            <select id="faultTypeFilter" class="filter-select">
+              <option value="all">All Types</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Instrumentation">Instrumentation</option>
+              <option value="Civil">Civil</option>
+              <option value="Operational">Operational</option>
+            </select>
+          </div>
+          <div class="date-filter-group">
+            <input type="date" id="faultDateFrom" class="date-input" placeholder="From">
+            <span>to</span>
+            <input type="date" id="faultDateTo" class="date-input" placeholder="To">
+            <button class="btn-filter" id="faultApplyFilter"><i class="fas fa-filter"></i> Apply</button>
+            <button class="btn-reset" id="faultResetFilter"><i class="fas fa-undo"></i> Reset</button>
+          </div>
+        </div>
+
+        <!-- Faults Table -->
+        <div class="faults-card">
+          <div class="faults-card-header">
+            <div class="faults-card-title"><i class="fas fa-list-alt"></i> Fault Log</div>
+            <span class="faults-count" id="faultsCount">0 records</span>
+          </div>
+          <div class="faults-table-wrapper">
+            <table class="faults-table" id="faultsTable">
+              <thead>
+                <tr>
+                  <th>Fault ID</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Equipment</th>
+                  <th>Type</th>
+                  <th>Severity</th>
+                  <th>Description</th>
+                  <th>Downtime</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="faultsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Two Column Charts -->
+        <div class="two-col">
+          <div class="fault-chart-card">
+            <div class="fault-chart-header">
+              <div class="fault-chart-title"><i class="fas fa-chart-bar"></i> Faults by Equipment</div>
+            </div>
+            <div class="fault-chart-body">
+              <canvas id="faultsByEquipmentChart" height="220"></canvas>
+            </div>
+          </div>
+          <div class="fault-chart-card">
+            <div class="fault-chart-header">
+              <div class="fault-chart-title"><i class="fas fa-chart-line"></i> Monthly Fault Trend</div>
+            </div>
+            <div class="fault-chart-body">
+              <canvas id="faultTrendChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="fault-chart-card">
+            <div class="fault-chart-header">
+              <div class="fault-chart-title"><i class="fas fa-chart-pie"></i> Faults by Type</div>
+            </div>
+            <div class="fault-chart-body">
+              <canvas id="faultsByTypeChart" height="200"></canvas>
+            </div>
+          </div>
+          <div class="fault-chart-card">
+            <div class="fault-chart-header">
+              <div class="fault-chart-title"><i class="fas fa-chart-line"></i> MTTR Trend (Hours)</div>
+            </div>
+            <div class="fault-chart-body">
+              <canvas id="mttrTrendChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Uploaded Files Info -->
+        <div class="fault-files-card" id="faultFilesCard" style="display:none">
+          <div class="fault-files-header">
+            <div class="fault-files-title"><i class="fas fa-file-excel"></i> Imported Data</div>
+            <button class="btn-clear" id="clearFaultData">Clear All</button>
+          </div>
+          <div class="fault-files-body" id="faultFileList"></div>
+        </div>
+      </div>
+
+      <!-- Add/Edit Fault Modal -->
+      <div class="fault-modal" id="faultModal" style="display:none">
+        <div class="fault-modal-content">
+          <div class="fault-modal-header">
+            <h3 id="faultModalTitle">Log New Fault</h3>
+            <button class="modal-close" onclick="closeFaultModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="fault-modal-body">
+            <form class="fault-form" id="faultForm">
+              <div class="fault-form-row">
+                <div class="fault-form-group">
+                  <label>Equipment *</label>
+                  <select id="faultEquipment" required>
+                    <option value="">Select Equipment</option>
+                  </select>
+                </div>
+                <div class="fault-form-group">
+                  <label>Fault Type *</label>
+                  <select id="faultType">
+                    <option value="Electrical">Electrical</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Instrumentation">Instrumentation</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Operational">Operational</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fault-form-row">
+                <div class="fault-form-group">
+                  <label>Severity *</label>
+                  <select id="faultSeverity">
+                    <option value="Critical">🔴 Critical</option>
+                    <option value="High">🟠 High</option>
+                    <option value="Medium">🟡 Medium</option>
+                    <option value="Low">🟢 Low</option>
+                  </select>
+                </div>
+                <div class="fault-form-group">
+                  <label>Status</label>
+                  <select id="faultStatus">
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fault-form-row">
+                <div class="fault-form-group">
+                  <label>Date *</label>
+                  <input type="date" id="faultDate" required>
+                </div>
+                <div class="fault-form-group">
+                  <label>Time *</label>
+                  <input type="time" id="faultTime" required>
+                </div>
+              </div>
+              <div class="fault-form-group">
+                <label>Description *</label>
+                <textarea id="faultDescription" rows="3" placeholder="Describe the fault..." required></textarea>
+              </div>
+              <div class="fault-form-group">
+                <label>Root Cause</label>
+                <textarea id="faultCause" rows="2" placeholder="If known..."></textarea>
+              </div>
+              <div class="fault-form-row">
+                <div class="fault-form-group">
+                  <label>Response Time (minutes)</label>
+                  <input type="number" id="faultResponseTime" placeholder="Minutes to acknowledge">
+                </div>
+                <div class="fault-form-group">
+                  <label>Resolution Time (hours)</label>
+                  <input type="number" id="faultResolutionTime" step="0.5" placeholder="Hours to fix">
+                </div>
+              </div>
+              <div class="fault-form-group">
+                <label>Resolution Notes</label>
+                <textarea id="faultResolutionNotes" rows="2" placeholder="What was done to fix?"></textarea>
+              </div>
+              <div class="fault-form-group">
+                <label>Reported By</label>
+                <input type="text" id="faultReportedBy" placeholder="Operator name">
+              </div>
+              <div class="fault-form-group">
+                <label>Assigned Technician</label>
+                <input type="text" id="faultTechnician" placeholder="Who is working on this?">
+              </div>
+            </form>
+          </div>
+          <div class="fault-modal-footer">
+            <button class="btn btn-secondary" onclick="closeFaultModal()">Cancel</button>
+            <button class="btn btn-primary" id="saveFaultBtn">Save Fault</button>
+          </div>
+          <div class="fault-modal-footer" id="faultWOFooter" style="display:none">
+            <button class="btn btn-secondary" onclick="closeFaultModal()">Cancel</button>
+            <button class="btn btn-teal" id="createWOBtn"><i class="fas fa-clipboard-list"></i> Create Work Order</button>
+            <button class="btn btn-primary" id="updateFaultBtn">Update Fault</button>
+          </div>
+        </div>
+      </div>
+
+            <!-- PAGE: REPORTS -->
+      <div class="page-content page" id="page-reports">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Reports & Analytics</div>
+            <div class="page-subtitle">
+              Generate comprehensive reports with data analysis and actionable recommendations
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm" id="refreshReportsBtn">
+              <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+          </div>
+        </div>
+
+        <!-- Report Generator Card -->
+        <div class="report-generator-card">
+          <div class="report-generator-header">
+            <h3><i class="fas fa-chart-line"></i> Report Generator</h3>
+            <p>Select parameters to generate custom reports</p>
+          </div>
+          <div class="report-generator-body">
+            <div class="report-form-grid">
+              <div class="report-form-group">
+                <label><i class="fas fa-file-alt"></i> Report Type</label>
+                <select id="reportType" class="form-control">
+                  <option value="overall">📊 Overall Plant Performance Report</option>
+                  <option value="generation">⚡ Generation Analysis Report</option>
+                  <option value="maintenance">🔧 Maintenance Effectiveness Report</option>
+                  <option value="faults">⚠️ Fault & Incident Analysis Report</option>
+                  <option value="asset">🏭 Asset Health Report</option>
+                  <option value="executive">📋 Executive Summary</option>
+                </select>
+              </div>
+              
+              <div class="report-form-group">
+                <label><i class="fas fa-calendar"></i> Period</label>
+                <div class="date-range-group">
+                  <input type="date" id="reportDateFrom" class="form-control">
+                  <span>to</span>
+                  <input type="date" id="reportDateTo" class="form-control">
+                </div>
+              </div>
+              
+              <div class="report-form-group">
+                <label><i class="fas fa-chart-pie"></i> Quick Select</label>
+                <div class="quick-select-group">
+                  <button class="quick-btn" data-days="7">Last 7 Days</button>
+                  <button class="quick-btn" data-days="30">Last 30 Days</button>
+                  <button class="quick-btn" data-days="90">Last Quarter</button>
+                  <button class="quick-btn" data-days="365">Last Year</button>
+                </div>
+              </div>
+              
+              <div class="report-form-group">
+                <label><i class="fas fa-download"></i> Output Format</label>
+                <div class="format-group">
+                  <label class="radio-label">
+                    <input type="radio" name="format" value="pdf" checked> 📄 PDF Report
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="format" value="excel"> 📊 Excel Data
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="format" value="csv"> 📋 CSV Export
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="report-actions">
+              <button class="btn btn-primary" id="generateReportBtn">
+                <i class="fas fa-file-alt"></i> Generate & Download Report
+              </button>
+              <button class="btn btn-secondary" id="previewReportBtn">
+                <i class="fas fa-eye"></i> Preview Report
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Preview Section -->
+        <div class="report-preview-card" id="reportPreview" style="display:none">
+          <div class="report-preview-header">
+            <h3><i class="fas fa-file-pdf"></i> Report Preview</h3>
+            <button class="close-preview" onclick="closeReportPreview()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="report-preview-body" id="reportPreviewContent"></div>
+          <div class="report-preview-footer">
+            <button class="btn btn-primary" id="downloadPreviewBtn">
+              <i class="fas fa-download"></i> Download
+            </button>
+          </div>
+        </div>
+
+        <!-- Executive Summary Dashboard -->
+        <div class="executive-summary-card">
+          <div class="executive-header">
+            <h3><i class="fas fa-chart-simple"></i> Current Period Executive Summary</h3>
+            <span class="period-badge" id="summaryPeriod">Last 30 Days</span>
+          </div>
+          <div class="executive-body" id="executiveSummary">
+            <!-- Dynamic content -->
+          </div>
+        </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="report-metrics-grid" id="reportMetricsGrid">
+          <!-- Dynamic KPI cards -->
+        </div>
+
+        <!-- Insights & Recommendations -->
+        <div class="insights-card">
+          <div class="insights-header">
+            <h3><i class="fas fa-lightbulb"></i> AI-Powered Insights & Recommendations</h3>
+            <span class="insights-badge">Based on logged data analysis</span>
+          </div>
+          <div class="insights-body" id="insightsContent">
+            <!-- Dynamic insights -->
+          </div>
+        </div>
+
+        <!-- Trend Charts -->
+        <div class="two-col">
+          <div class="report-chart-card">
+            <div class="report-chart-header">
+              <div class="report-chart-title">📈 Key Performance Trends</div>
+            </div>
+            <div class="report-chart-body">
+              <canvas id="kpiTrendChart" height="250"></canvas>
+            </div>
+          </div>
+          <div class="report-chart-card">
+            <div class="report-chart-header">
+              <div class="report-chart-title">🥧 Distribution Analysis</div>
+            </div>
+            <div class="report-chart-body">
+              <canvas id="distributionChart" height="250"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Reports History -->
+        <div class="reports-history-card">
+          <div class="reports-history-header">
+            <h3><i class="fas fa-history"></i> Recent Reports</h3>
+            <button class="btn-clear" id="clearReportsHistory">Clear History</button>
+          </div>
+          <div class="reports-history-body" id="reportsHistoryList">
+            <!-- Dynamic history -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Modal for PDF generation -->
+      <div class="report-modal" id="reportModal" style="display:none">
+        <div class="report-modal-content">
+          <div class="report-modal-header">
+            <h3>Report Preview</h3>
+            <button class="modal-close" onclick="closeReportModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="report-modal-body" id="reportModalBody">
+            <!-- Report content for print -->
+          </div>
+          <div class="report-modal-footer">
+            <button class="btn btn-secondary" onclick="closeReportModal()">Close</button>
+            <button class="btn btn-primary" id="printReportBtn"><i class="fas fa-print"></i> Print / Save PDF</button>
+          </div>
+        </div>
+      </div>
+
+            <!-- PAGE: DOCUMENTS -->
+      <div class="page-content page" id="page-documents">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Document Management System</div>
+            <div class="page-subtitle">
+              Central repository for O&M manuals, drawings, safety documents, and plant records
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm" id="docUploadBtn">
+              <i class="fas fa-cloud-upload-alt"></i> Upload Document
+            </button>
+            <button class="btn btn-secondary btn-sm" id="docSearchBtn">
+              <i class="fas fa-search"></i> Search
+            </button>
+            <input type="file" id="docFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.png,.dwg" style="display:none" multiple>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="doc-stats-bar">
+          <div class="doc-stat">
+            <i class="fas fa-file-alt"></i>
+            <span id="totalDocs">0</span>
+            <small>Total Documents</small>
+          </div>
+          <div class="doc-stat">
+            <i class="fas fa-folder"></i>
+            <span id="totalFolders">12</span>
+            <small>Categories</small>
+          </div>
+          <div class="doc-stat">
+            <i class="fas fa-download"></i>
+            <span id="totalDownloads">0</span>
+            <small>Total Downloads</small>
+          </div>
+          <div class="doc-stat">
+            <i class="fas fa-clock"></i>
+            <span id="recentCount">0</span>
+            <small>Recent (7 days)</small>
+          </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="doc-main-layout">
+          <!-- Left Sidebar - Folder Tree -->
+          <div class="doc-sidebar">
+            <div class="doc-sidebar-header">
+              <h4><i class="fas fa-folder-tree"></i> Document Library</h4>
+              <button class="btn-collapse" onclick="toggleAllFolders()"><i class="fas fa-compress-alt"></i></button>
+            </div>
+            <div class="doc-folder-tree" id="folderTree">
+              <!-- Dynamic folder tree -->
+            </div>
+          </div>
+
+          <!-- Right Content - Document List -->
+          <div class="doc-content">
+            <!-- Search Bar -->
+            <div class="doc-search-bar" id="docSearchBar" style="display:none">
+              <input type="text" id="docSearchInput" placeholder="Search by filename, description, tags..." class="doc-search-input">
+              <button class="doc-search-clear" onclick="clearDocSearch()"><i class="fas fa-times"></i></button>
+              <button class="btn-secondary btn-sm" onclick="performDocSearch()">Search</button>
+            </div>
+
+            <!-- Current Location -->
+            <div class="doc-breadcrumb">
+              <span><i class="fas fa-home"></i> Document Library</span>
+              <span id="currentFolderPath"></span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="doc-actions">
+              <button class="doc-action-btn" onclick="showNewFolderModal()"><i class="fas fa-folder-plus"></i> New Folder</button>
+              <button class="doc-action-btn" onclick="refreshDocuments()"><i class="fas fa-sync-alt"></i> Refresh</button>
+              <div class="doc-view-toggle">
+                <button class="view-btn active" data-view="grid" onclick="setViewMode('grid')"><i class="fas fa-th"></i></button>
+                <button class="view-btn" data-view="list" onclick="setViewMode('list')"><i class="fas fa-list"></i></button>
+              </div>
+            </div>
+
+            <!-- Document Grid/List View -->
+            <div class="doc-items-container" id="docItemsContainer">
+              <!-- Dynamic content -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Uploads Section -->
+        <div class="doc-recent-section">
+          <div class="doc-recent-header">
+            <h4><i class="fas fa-history"></i> Recent Uploads</h4>
+            <button class="btn-link" onclick="viewAllRecent()">View All</button>
+          </div>
+          <div class="doc-recent-grid" id="recentUploads">
+            <!-- Dynamic recent uploads -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Document Modal -->
+      <div class="doc-modal" id="uploadModal" style="display:none">
+        <div class="doc-modal-content">
+          <div class="doc-modal-header">
+            <h3><i class="fas fa-cloud-upload-alt"></i> Upload Document</h3>
+            <button class="modal-close" onclick="closeUploadModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="doc-modal-body">
+            <form id="uploadForm">
+              <div class="doc-form-group">
+                <label>Select File(s) *</label>
+                <div class="file-drop-zone" id="fileDropZone">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <p>Drag & drop files here or click to browse</p>
+                  <small>Supports: PDF, DOC, XLS, PPT, Images, DWG</small>
+                </div>
+                <input type="file" id="uploadFiles" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.png,.dwg" style="display:none">
+              </div>
+              <div class="doc-form-group">
+                <label>Destination Folder</label>
+                <select id="uploadFolder" class="doc-select">
+                  <!-- Dynamic folders -->
+                </select>
+              </div>
+              <div class="doc-form-group">
+                <label>Description (optional)</label>
+                <textarea id="uploadDescription" rows="2" placeholder="Add a description..."></textarea>
+              </div>
+              <div class="doc-form-group">
+                <label>Tags (comma separated)</label>
+                <input type="text" id="uploadTags" placeholder="e.g., manual, drawing, procedure">
+              </div>
+              <div class="doc-form-group">
+                <label>Expiry Date (optional)</label>
+                <input type="date" id="uploadExpiry">
+              </div>
+            </form>
+            <div id="uploadProgress" style="display:none">
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+              <p class="progress-text">Uploading...</p>
+            </div>
+          </div>
+          <div class="doc-modal-footer">
+            <button class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="uploadDocuments()">Upload</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Folder Modal -->
+      <div class="doc-modal" id="folderModal" style="display:none">
+        <div class="doc-modal-content small">
+          <div class="doc-modal-header">
+            <h3><i class="fas fa-folder-plus"></i> Create New Folder</h3>
+            <button class="modal-close" onclick="closeFolderModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="doc-modal-body">
+            <div class="doc-form-group">
+              <label>Folder Name *</label>
+              <input type="text" id="newFolderName" placeholder="Enter folder name">
+            </div>
+            <div class="doc-form-group">
+              <label>Parent Folder</label>
+              <select id="parentFolder" class="doc-select">
+                <option value="root">Root</option>
+              </select>
+            </div>
+          </div>
+          <div class="doc-modal-footer">
+            <button class="btn btn-secondary" onclick="closeFolderModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="createNewFolder()">Create</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Document Preview Modal -->
+      <div class="doc-modal large" id="previewModal" style="display:none">
+        <div class="doc-modal-content">
+          <div class="doc-modal-header">
+            <h3 id="previewTitle">Document Preview</h3>
+            <button class="modal-close" onclick="closePreviewModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="doc-modal-body" id="previewBody">
+            <!-- Preview content -->
+          </div>
+          <div class="doc-modal-footer">
+            <button class="btn btn-secondary" onclick="closePreviewModal()">Close</button>
+            <button class="btn btn-primary" id="downloadDocBtn"><i class="fas fa-download"></i> Download</button>
+            <button class="btn btn-teal" id="deleteDocBtn"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Document Modal -->
+      <div class="doc-modal" id="editModal" style="display:none">
+        <div class="doc-modal-content small">
+          <div class="doc-modal-header">
+            <h3>Edit Document Info</h3>
+            <button class="modal-close" onclick="closeEditModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="doc-modal-body">
+            <div class="doc-form-group">
+              <label>Description</label>
+              <textarea id="editDescription" rows="2"></textarea>
+            </div>
+            <div class="doc-form-group">
+              <label>Tags</label>
+              <input type="text" id="editTags">
+            </div>
+            <div class="doc-form-group">
+              <label>Move to Folder</label>
+              <select id="editFolder" class="doc-select"></select>
+            </div>
+          </div>
+          <div class="doc-modal-footer">
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveDocumentEdit()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORK ORDERS PAGE -->
+      <div class="page-content page" id="page-workorders">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Work Orders</div>
+            <div class="page-subtitle">
+              Create, assign and track maintenance work orders
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">
+              <i class="fas fa-plus"></i> New WO
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>WO No.</th>
+                  <th>Title</th>
+                  <th>Equipment</th>
+                  <th>Type</th>
+                  <th>Priority</th>
+                  <th>Assigned To</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono bold">WO-2024-0234</td>
+                  <td>Replace Upper Guide Bearing U2</td>
+                  <td>Unit 2 Generator</td>
+                  <td><span class="badge badge-red">Breakdown</span></td>
+                  <td><span class="badge badge-red">Critical</span></td>
+                  <td>A. Adhikari</td>
+                  <td>2024-01-15</td>
+                  <td><span class="badge badge-amber">In Progress</span></td>
+                </tr>
+                <tr>
+                  <td class="mono bold">WO-2024-0233</td>
+                  <td>U3 Governor Quarterly Service</td>
+                  <td>Governor WW-505</td>
+                  <td><span class="badge badge-blue">Preventive</span></td>
+                  <td><span class="badge badge-amber">High</span></td>
+                  <td>P. Thapa</td>
+                  <td>2024-01-17</td>
+                  <td><span class="badge badge-blue">Scheduled</span></td>
+                </tr>
+                <tr>
+                  <td class="mono bold">WO-2024-0232</td>
+                  <td>T1 Oil Filtration & DGA Test</td>
+                  <td>Transformer T1</td>
+                  <td><span class="badge badge-blue">Preventive</span></td>
+                  <td><span class="badge badge-amber">Medium</span></td>
+                  <td>E. Shrestha</td>
+                  <td>2024-01-16</td>
+                  <td><span class="badge badge-red">Overdue</span></td>
+                </tr>
+                <tr>
+                  <td class="mono bold">WO-2024-0231</td>
+                  <td>U1 Gate Valve Packing Replace</td>
+                  <td>Penstock Valve P1</td>
+                  <td><span class="badge badge-amber">Corrective</span></td>
+                  <td><span class="badge badge-gray">Low</span></td>
+                  <td>A. Adhikari</td>
+                  <td>2024-01-20</td>
+                  <td><span class="badge badge-blue">Open</span></td>
+                </tr>
+                <tr>
+                  <td class="mono bold">WO-2024-0230</td>
+                  <td>Control Panel Terminal Torquing</td>
+                  <td>Control Panel</td>
+                  <td><span class="badge badge-blue">Preventive</span></td>
+                  <td><span class="badge badge-gray">Low</span></td>
+                  <td>S. Gurung</td>
+                  <td>2024-01-12</td>
+                  <td><span class="badge badge-green">Completed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-generation">
+        <!-- Header -->
+        <div class="gen-header">
+        <div>
+        <div class="gen-title">Generation Log Dashboard</div>
+        <div class="gen-subtitle">Set Nadi Hydro · CSV Upload & Analytics</div>
+        </div>
+        <button class="gen-upload-btn" id="uploadCsvBtn">
+        <i class="fas fa-cloud-upload-alt"></i> Upload File
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" multiple style="display:none">
+        </div>
+
+  <!-- Main 2-Column Layout -->
+  <div class="gen-layout">
+    
+    <!-- LEFT PANEL - Filters -->
+    <div class="gen-left-panel" id="genLeftPanel" style="display:none">
+      
+      <!-- Filter Section -->
+      <div class="gen-filter-section">
+        <div class="gen-filter-title">Filters & View</div>
+        
+        <div class="gen-filter-row">
+          <div class="gen-filter-group">
+            <label>FROM DATE</label>
+            <input type="date" id="filterFrom" class="gen-input">
+          </div>
+          <div class="gen-filter-group">
+            <label>TO DATE</label>
+            <input type="date" id="filterTo" class="gen-input">
+          </div>
+        </div>
+        
+        <div class="gen-filter-row">
+          <div class="gen-filter-group">
+            <label>Unit View</label>
+            <select id="filterUnit" class="gen-select">
+              <option value="both">Both Units</option>
+              <option value="u1">Unit I Only</option>
+              <option value="u2">Unit II Only</option>
+            </select>
+          </div>
+          <div class="gen-filter-group">
+            <label>Group By</label>
+            <select id="filterGroup" class="gen-select">
+              <option value="day">Daily</option>
+              <option value="hour">Hourly</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="gen-apply-btn" onclick="applyGenFilters()">
+          <i class="fas fa-sync-alt"></i> Apply Filters & Refresh
+        </button>
+      </div>
+      
+      <!-- Quick Summary -->
+      <div class="gen-summary-section">
+        <div class="gen-filter-title">Quick Summary</div>
+        <div class="gen-summary-grid">
+          <div class="gen-summary-card">
+            <div class="gen-summary-label">TOTAL DAYS</div>
+            <div class="gen-summary-value" id="qsDays">—</div>
+          </div>
+          <div class="gen-summary-card">
+            <div class="gen-summary-label">HOURS W/ DATA</div>
+            <div class="gen-summary-value" id="qsHours">—</div>
+          </div>
+          <div class="gen-summary-card">
+            <div class="gen-summary-label">SHUTDOWN HRS</div>
+            <div class="gen-summary-value" id="qsShutdown">—</div>
+          </div>
+          <div class="gen-summary-card">
+            <div class="gen-summary-label">AVG PF (U1)</div>
+            <div class="gen-summary-value" id="qsPF">—</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Column Guide -->
+      <div class="gen-guide-section">
+        <div class="gen-filter-title">Column Guide</div>
+        <div class="gen-guide-content">
+          <div><span class="gen-guide-dot cyan"></span> MWH = Cumulative energy meter (kWh×1000)</div>
+          <div><span class="gen-guide-dot blue"></span> MW = Active power output</div>
+          <div><span class="gen-guide-dot amber"></span> PF = Power factor (Cosφ)</div>
+          <div><span class="gen-guide-dot green"></span> Hz = Grid frequency</div>
+          <div><span class="gen-guide-dot violet"></span> I1/I2/I3 = Phase currents (Amperes)</div>
+          <div><span class="gen-guide-dot red"></span> SHUTDOWN = Unit offline at that hour</div>
+          <div class="gen-guide-note">⚠ Date format: Nepali BS calendar (2081 Kartik = Oct–Nov 2024 AD)</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- RIGHT PANEL - Content -->
+    <div class="gen-right-panel">
+      
+      <!-- Empty State -->
+      <div class="gen-empty-state" id="genEmptyState">
+        <div class="gen-empty-icon">📊</div>
+        <div class="gen-empty-title">No Generation Data Loaded</div>
+        <div class="gen-empty-desc">
+          Upload a daily log CSV file to start. The app will automatically parse<br>
+          all daily sheets, extract generation data for both units, and build<br>
+          your generation dashboard.
+        </div>
+        <button class="gen-primary-btn" onclick="document.getElementById('csvFileInput').click()">
+          <i class="fas fa-cloud-upload-alt"></i> Upload CSV Files
+        </button>
+      </div>
+      
+      <!-- Dashboard Content -->
+      <div id="genDashboardContent" style="display:none">
+        
+        <!-- Stats Bar -->
+        <div class="gen-stats-bar">
+          <div>
+            <div class="gen-stats-title" id="genDashTitle">—</div>
+            <div class="gen-stats-subtitle" id="genDashSubtitle">—</div>
+          </div>
+          <div class="gen-unit-badges">
+            <span class="gen-unit-badge on"><span class="gen-led"></span> UNIT I</span>
+            <span class="gen-unit-badge on"><span class="gen-led"></span> UNIT II</span>
+          </div>
+        </div>
+        
+        <!-- KPI Row -->
+        <div class="gen-kpi-row" id="genKpiRow"></div>
+        
+        <!-- Daily Generation Chart -->
+        <div class="gen-chart-card">
+          <div class="gen-chart-header">
+            <div class="gen-chart-title">
+              <div class="gen-chart-dot cyan"></div>
+              Daily Generation — Both Units Combined
+            </div>
+            <div class="gen-chart-tabs">
+              <button class="gen-tab-btn active" data-mode="mwh" onclick="switchGenChartMode('mwh')">MWh</button>
+              <button class="gen-tab-btn" data-mode="mw" onclick="switchGenChartMode('mw')">Avg MW</button>
+              <button class="gen-tab-btn" data-mode="hours" onclick="switchGenChartMode('hours')">Op Hours</button>
+            </div>
+          </div>
+          <div class="gen-chart-body">
+            <canvas id="genTrendChart" style="height:280px; width:100%"></canvas>
+          </div>
+        </div>
+        
+        <!-- Two Column Charts -->
+        <div class="gen-two-col">
+          <div class="gen-chart-card">
+            <div class="gen-chart-header">
+              <div class="gen-chart-title">
+                <div class="gen-chart-dot blue"></div>
+                Unit I vs Unit II — MW Output
+              </div>
+            </div>
+            <div class="gen-chart-body">
+              <canvas id="unitCompChart" style="height:220px; width:100%"></canvas>
+            </div>
+          </div>
+          
+          <div class="gen-chart-card">
+            <div class="gen-chart-header">
+              <div class="gen-chart-title">
+                <div class="gen-chart-dot amber"></div>
+                PF & Frequency
+              </div>
+            </div>
+            <div class="gen-chart-body">
+              <canvas id="pfHzChart" style="height:220px; width:100%"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Hourly Profile -->
+        <div class="gen-chart-card">
+          <div class="gen-chart-header">
+            <div class="gen-chart-title">
+              <div class="gen-chart-dot violet"></div>
+              Hourly Load Profile — 24h Pattern
+            </div>
+          </div>
+          <div class="gen-chart-body">
+            <canvas id="hourlyProfileChart" style="height:240px; width:100%"></canvas>
+          </div>
+        </div>
+        
+        <!-- Daily Summary Table -->
+        <div class="gen-table-card">
+          <div class="gen-table-header">
+            <div class="gen-chart-title">📅 Daily Generation Summary</div>
+            <span class="gen-badge" id="genTableDaysCount">0 days</span>
+          </div>
+          <div class="gen-table-wrapper">
+            <table class="gen-table" id="genDailySummaryTable">
+              <thead>
+                <tr>
+                  <th>BS Date</th><th>AD Date</th><th>U1 MWh</th><th>U2 MWh</th>
+                  <th>Total MWh</th><th>U1 Avg MW</th><th>U2 Avg MW</th>
+                  <th>Max MW</th><th>Op Hours</th><th>Shutdown Hrs</th><th>Avg PF</th><th>Avg Hz</th>
+                </td>
+              </thead>
+              <tbody id="genDailySummaryBody"></tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Uploaded Files -->
+        <div class="gen-files-card" id="genFilesCard" style="display:none">
+          <div class="gen-table-header">
+            <div class="gen-chart-title">📁 Uploaded Files</div>
+            <button class="gen-clear-btn" onclick="clearAllGenData()">Clear All</button>
+          </div>
+          <div id="genFileList"></div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+      <!-- FLOATING ACTION BUTTON -->
+      <div class="fab-wrap">
+        <div class="fab-menu" id="fabMenu">
+          <div class="fab-action">
+            <div class="fab-action-icon" style="background: var(--accent-teal)">
+              <i class="fas fa-bolt"></i>
+            </div>
+            <span>Log Generation</span>
+          </div>
+          <div class="fab-action">
+            <div
+              class="fab-action-icon"
+              style="background: var(--status-warning)"
+            >
+              <i class="fas fa-tools"></i>
+            </div>
+            <span>Report Fault</span>
+          </div>
+          <div class="fab-action">
+            <div class="fab-action-icon" style="background: var(--accent-blue)">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <span>New Work Order</span>
+          </div>
+          <div class="fab-action">
+            <div class="fab-action-icon" style="background: #9f7aea">
+              <i class="fas fa-box-open"></i>
+            </div>
+            <span>Issue Stock</span>
+          </div>
+        </div>
+        <button class="fab" id="fabBtn" onclick="toggleFab()">
+          <i class="fas fa-plus" id="fabIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
