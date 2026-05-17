@@ -1,4 +1,133 @@
 // ============================================
+// GOOGLE SHEETS SYNC CONFIGURATION
+// ============================================
+
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbxo9IcFLC6haxRkkRLnEbet5jM5cR87O2A29ONpJ-oNtXtA3tCaaENLV54eRH0LShd7/exec";
+
+let syncEnabled = true;
+let syncInProgress = false;
+
+// ============================================
+// GOOGLE SHEETS SYNC FUNCTIONS
+// ============================================
+
+// Sync posts from Google Sheets
+async function syncPostsFromSheets() {
+  if (!syncEnabled) return false;
+
+  try {
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getPosts`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.posts && data.posts.length > 0) {
+        localStorage.setItem(
+          "maintenance_feed_posts",
+          JSON.stringify(data.posts),
+        );
+        loadMaintenanceFeed();
+        return true;
+      }
+    }
+  } catch (error) {
+    console.log("Sync from sheets failed:", error);
+  }
+  return false;
+}
+
+// Push post to Google Sheets
+async function pushPostToSheets(post) {
+  if (!syncEnabled) return false;
+
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "createPost", post: post }),
+    });
+    return true;
+  } catch (error) {
+    console.log("Push to sheets failed:", error);
+    return false;
+  }
+}
+
+// Push comment to Google Sheets
+async function pushCommentToSheets(postId, author, text) {
+  if (!syncEnabled) return false;
+
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "addComment",
+        post_id: postId,
+        author: author,
+        text: text,
+      }),
+    });
+    return true;
+  } catch (error) {
+    console.log("Push comment failed:", error);
+    return false;
+  }
+}
+
+// Push like to Google Sheets
+async function pushLikeToSheets(postId, username) {
+  if (!syncEnabled) return false;
+
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "toggleLike",
+        post_id: postId,
+        username: username,
+      }),
+    });
+    return true;
+  } catch (error) {
+    console.log("Push like failed:", error);
+    return false;
+  }
+}
+
+// Manual sync button function
+function manualSync() {
+  if (syncInProgress) {
+    showFeedToast("Sync already in progress...", "#f5ae3a");
+    return;
+  }
+
+  syncInProgress = true;
+  showFeedToast("🔄 Syncing with cloud...", "#4a9de8");
+
+  syncPostsFromSheets()
+    .then(() => {
+      syncInProgress = false;
+      showFeedToast("✓ Sync complete!", "#29c48f");
+    })
+    .catch(() => {
+      syncInProgress = false;
+      showFeedToast("⚠️ Sync failed", "#f5ae3a");
+    });
+}
+
+// Toggle sync mode
+function toggleSyncMode() {
+  syncEnabled = !syncEnabled;
+  showFeedToast(
+    syncEnabled ? "Cloud sync ENABLED" : "Local mode only",
+    syncEnabled ? "#29c48f" : "#f5ae3a",
+  );
+}
+// ============================================
 // NAVIGATION & CORE FUNCTIONS
 // ============================================
 
@@ -7653,3 +7782,917 @@ window.closeQuickModal = closeQuickModal;
 window.removePhoto = removePhoto;
 window.closePhotoViewer = closePhotoViewer;
 window.viewPhotoFullscreen = viewPhotoFullscreen;
+
+// ============================================
+// MAINTENANCE FEED - COMPLETE WORKING VERSION
+// ============================================
+
+let FeedDB = {
+  posts: [],
+  currentPostId: null,
+};
+
+let feedPhotos = [];
+
+// Setup photo handlers
+function setupFeedPhotoHandlers() {
+  const takeBtn = document.getElementById("feedTakePhotoBtn");
+  const chooseBtn = document.getElementById("feedChoosePhotoBtn");
+  const cameraInput = document.getElementById("feedCameraInput");
+  const galleryInput = document.getElementById("feedGalleryInput");
+
+  if (takeBtn && cameraInput) {
+    takeBtn.onclick = () => cameraInput.click();
+    cameraInput.onchange = (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFeedPhotos(e.target.files);
+      }
+      cameraInput.value = "";
+    };
+  }
+
+  if (chooseBtn && galleryInput) {
+    chooseBtn.onclick = () => galleryInput.click();
+    galleryInput.onchange = (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFeedPhotos(e.target.files);
+      }
+      galleryInput.value = "";
+    };
+  }
+}
+
+// Handle selected photos
+function handleFeedPhotos(files) {
+  const maxFiles = 5;
+  const maxSize = 5 * 1024 * 1024;
+
+  Array.from(files).forEach((file) => {
+    if (!file.type.startsWith("image/")) {
+      showFeedToast("Only image files are allowed", "#f5ae3a");
+      return;
+    }
+    if (file.size > maxSize) {
+      showFeedToast(`${file.name.substring(0, 20)} exceeds 5MB`, "#f5ae3a");
+      return;
+    }
+    if (feedPhotos.length >= maxFiles) {
+      showFeedToast(`Maximum ${maxFiles} photos allowed`, "#f5ae3a");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      feedPhotos.push({
+        id: Date.now() + Math.random(),
+        data: e.target.result,
+        name: file.name,
+      });
+      renderFeedPhotoPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Render photo preview
+function renderFeedPhotoPreview() {
+  const container = document.getElementById("feedPhotoPreview");
+  if (!container) return;
+
+  if (feedPhotos.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = feedPhotos
+    .map(
+      (photo, idx) => `
+        <div class="feed-photo-preview-item">
+            <img src="${photo.data}" alt="Preview">
+            <button class="feed-photo-remove" onclick="removeFeedPhoto(${idx})">✕</button>
+        </div>
+    `,
+    )
+    .join("");
+}
+
+// Remove photo
+function removeFeedPhoto(idx) {
+  feedPhotos.splice(idx, 1);
+  renderFeedPhotoPreview();
+}
+
+// Clear all photos
+function clearFeedPhotos() {
+  feedPhotos = [];
+  renderFeedPhotoPreview();
+}
+
+// Toggle inline post form
+function toggleInlinePostForm() {
+  const form = document.getElementById("inlinePostForm");
+  if (form) {
+    if (form.style.display === "none" || form.style.display === "") {
+      form.style.display = "block";
+      document.getElementById("inlinePostTitle").value = "";
+      document.getElementById("inlinePostDesc").value = "";
+      document.getElementById("inlinePostEquipment").value = "";
+      document.getElementById("inlinePostWorkOrder").value = "";
+      document.getElementById("inlinePostTags").value = "";
+      clearFeedPhotos();
+      document.querySelectorAll(".post-type-btn").forEach((btn) => {
+        btn.classList.remove("active");
+        if (btn.getAttribute("data-type") === "update") {
+          btn.classList.add("active");
+        }
+      });
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      form.style.display = "none";
+    }
+  }
+}
+
+// Submit new post
+
+function submitInlinePost() {
+  const title = document.getElementById("inlinePostTitle").value.trim();
+  const description = document.getElementById("inlinePostDesc").value.trim();
+  const equipment = document.getElementById("inlinePostEquipment").value;
+  const workOrder = document.getElementById("inlinePostWorkOrder").value.trim();
+  const tags = document.getElementById("inlinePostTags").value.trim();
+
+  let postType = "update";
+  document.querySelectorAll(".post-type-btn").forEach((btn) => {
+    if (btn.classList.contains("active")) {
+      postType = btn.getAttribute("data-type");
+    }
+  });
+
+  const author = getCurrentUserName();
+
+  if (!title && !description) {
+    showFeedToast("Please enter a title or description", "#f5ae3a");
+    return;
+  }
+
+  const photoUrls = feedPhotos.map((photo) => photo.data);
+
+  const newPost = {
+    post_id:
+      "post_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+    timestamp: new Date().toISOString(),
+    author: author,
+    post_type: postType,
+    title: title || description.substring(0, 50),
+    description: description,
+    equipment: equipment,
+    work_order_id: workOrder,
+    tags: tags,
+    photos: photoUrls,
+    like_count: 0,
+    likes: [],
+    comments: [],
+  };
+
+  let posts = JSON.parse(
+    localStorage.getItem("maintenance_feed_posts") || "[]",
+  );
+  posts.unshift(newPost);
+  localStorage.setItem(
+    "maintenance_feed_posts",
+    JSON.stringify(posts.slice(0, 200)),
+  );
+
+  // Push to Google Sheets (after saving to localStorage)
+  if (syncEnabled) {
+    pushPostToSheets(newPost);
+  }
+
+  clearFeedPhotos();
+  toggleInlinePostForm();
+  loadMaintenanceFeed();
+  showFeedToast(
+    "✓ Post created with " + photoUrls.length + " photo(s)!",
+    "#29c48f",
+  );
+}
+
+// Load feed posts
+function loadMaintenanceFeed() {
+  const feedPostsContainer = document.getElementById("feedPosts");
+  if (!feedPostsContainer) return;
+
+  let posts = JSON.parse(
+    localStorage.getItem("maintenance_feed_posts") || "[]",
+  );
+  FeedDB.posts = posts;
+
+  if (posts.length === 0) {
+    feedPostsContainer.innerHTML = `
+            <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                <i class="fas fa-newspaper" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
+                <p>No posts yet.</p>
+                <p style="font-size:12px;">Click "Create New Post" to share maintenance updates.</p>
+            </div>
+        `;
+    return;
+  }
+
+  feedPostsContainer.innerHTML = posts
+    .map((post) => renderFeedCard(post))
+    .join("");
+}
+
+// Render feed card
+function renderFeedCard(post) {
+  const timeAgo = formatTimeAgo(post.timestamp);
+  const typeIcon =
+    { update: "🔧", issue: "⚠️", complete: "✅", inspection: "🔍" }[
+      post.post_type
+    ] || "📝";
+  const typeLabel =
+    {
+      update: "Task Update",
+      issue: "Issue Report",
+      complete: "Completed",
+      inspection: "Inspection",
+    }[post.post_type] || "Update";
+  const currentUser = getCurrentUserName();
+  const isLiked = post.likes && post.likes.includes(currentUser);
+
+  const photosHtml =
+    post.photos && post.photos.length > 0
+      ? `
+        <div class="feed-post-photos">
+            ${post.photos
+              .map(
+                (photo) => `
+                <img src="${photo}" class="feed-post-photo" onclick="openPhotoViewer('${photo}')" alt="Post photo">
+            `,
+              )
+              .join("")}
+        </div>
+    `
+      : "";
+
+  const commentsHtml = renderCommentsSection(post.post_id, post.comments || []);
+
+  return `
+        <div class="feed-post-card" data-post-id="${post.post_id}">
+            <div class="feed-post-header">
+                <div class="feed-post-avatar">${(post.author || "U").charAt(0).toUpperCase()}</div>
+                <div class="feed-post-author-info">
+                    <div class="feed-post-author">${escapeHtml(post.author || "Unknown")}</div>
+                    <div class="feed-post-time">${timeAgo}</div>
+                </div>
+                <div class="feed-post-badge ${post.post_type || "update"}">
+                    ${typeIcon} ${typeLabel}
+                </div>
+            </div>
+            <div class="feed-post-body">
+                ${post.title ? `<div class="feed-post-title">${escapeHtml(post.title)}</div>` : ""}
+                ${post.description ? `<div class="feed-post-description">${escapeHtml(post.description)}</div>` : ""}
+                ${photosHtml}
+                <div class="feed-post-meta">
+                    ${post.equipment ? `<span><i class="fas fa-microchip"></i> ${escapeHtml(post.equipment)}</span>` : ""}
+                    ${post.work_order_id ? `<span><i class="fas fa-clipboard-list"></i> ${escapeHtml(post.work_order_id)}</span>` : ""}
+                </div>
+                ${
+                  post.tags
+                    ? `<div class="feed-post-tags">${post.tags
+                        .split(",")
+                        .map(
+                          (tag) =>
+                            `<span class="feed-tag">#${tag.trim()}</span>`,
+                        )
+                        .join("")}</div>`
+                    : ""
+                }
+                <div class="feed-post-actions">
+                    <button class="feed-action-btn like-btn ${isLiked ? "liked" : ""}" data-action="like" data-post-id="${post.post_id}">
+                        <i class="fas fa-heart"></i> ${post.like_count || 0}
+                    </button>
+                    <button class="feed-action-btn comment-btn" data-action="comment" data-post-id="${post.post_id}">
+                        <i class="fas fa-comment"></i> Comment (${post.comments?.length || 0})
+                    </button>
+                </div>
+                ${commentsHtml}
+            </div>
+        </div>
+    `;
+}
+
+// Render comments section
+function renderCommentsSection(postId, comments) {
+  if (!comments || comments.length === 0) {
+    return `<div class="feed-comments-section" id="comments-${postId}">
+                    <div class="feed-no-comments">No comments yet. Click Comment to add one.</div>
+                </div>`;
+  }
+
+  const visibleComments = comments.slice(0, 2);
+  const hiddenCount = comments.length - 2;
+
+  return `
+        <div class="feed-comments-section" id="comments-${postId}">
+            ${visibleComments
+              .map(
+                (comment) => `
+                <div class="feed-comment">
+                    <span class="feed-comment-author">${escapeHtml(comment.author)}:</span>
+                    <span class="feed-comment-text">${escapeHtml(comment.text)}</span>
+                    <span class="feed-comment-time">${formatTimeAgo(comment.timestamp)}</span>
+                </div>
+            `,
+              )
+              .join("")}
+            ${hiddenCount > 0 ? `<div class="view-more-comments" onclick="showAllComments('${postId}')">View all ${comments.length} comments</div>` : ""}
+        </div>
+    `;
+}
+
+// Show comment form
+function bindFeedActions() {
+  if (FeedDB.actionsBound) return;
+  const feedPosts = document.getElementById("feedPosts");
+  if (!feedPosts) return;
+
+  feedPosts.addEventListener("click", (event) => {
+    const actionBtn = event.target.closest(".feed-action-btn");
+    if (!actionBtn) return;
+
+    const postId = actionBtn.dataset.postId;
+    const action = actionBtn.dataset.action;
+    if (!postId || !action) return;
+
+    if (action === "like") {
+      toggleFeedLike(postId);
+    } else if (action === "comment") {
+      showFeedCommentForm(postId);
+    }
+  });
+
+  FeedDB.actionsBound = true;
+}
+
+function showFeedCommentForm(postId) {
+  FeedDB.currentPostId = postId;
+
+  const existingForm = document.getElementById(`comment-form-${postId}`);
+  if (existingForm) {
+    existingForm.remove();
+    return;
+  }
+
+  let commentsSection = document.getElementById(`comments-${postId}`);
+  if (!commentsSection) {
+    const postCard = document.querySelector(
+      `.feed-post-card[data-post-id="${postId}"]`,
+    );
+    if (postCard) commentsSection = postCard.querySelector(".feed-post-body");
+  }
+  if (!commentsSection) return;
+
+  const formHtml = `
+        <div class="feed-comment-form" id="comment-form-${postId}">
+            <div class="feed-comment-input-group">
+                <input type="text" id="comment-input-${postId}" placeholder="Write a comment..." class="comment-input">
+                <button type="button" class="btn-primary btn-sm" onclick="submitFeedComment('${postId}')">Post</button>
+                <button type="button" class="btn-secondary btn-sm" onclick="cancelFeedComment('${postId}')">Cancel</button>
+            </div>
+        </div>
+    `;
+
+  commentsSection.insertAdjacentHTML("beforeend", formHtml);
+  const commentInput = document.getElementById(`comment-input-${postId}`);
+  if (commentInput) {
+    commentInput.focus();
+    commentInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitFeedComment(postId);
+      }
+    });
+  }
+}
+
+// Cancel comment
+function cancelFeedComment(postId) {
+  const form = document.getElementById(`comment-form-${postId}`);
+  if (form) form.remove();
+  FeedDB.currentPostId = null;
+}
+
+// Submit comment
+function submitFeedComment(postId) {
+  const commentInput = document.getElementById(`comment-input-${postId}`);
+  const commentText = commentInput?.value.trim();
+
+  if (!commentText) {
+    showFeedToast("Please enter a comment", "#f5ae3a");
+    return;
+  }
+
+  let posts = JSON.parse(
+    localStorage.getItem("maintenance_feed_posts") || "[]",
+  );
+  const postIndex = posts.findIndex((p) => p.post_id === postId);
+  const userName = getCurrentUserName();
+
+  if (postIndex !== -1) {
+    if (!posts[postIndex].comments) posts[postIndex].comments = [];
+
+    posts[postIndex].comments.push({
+      id: Date.now(),
+      author: userName,
+      text: commentText,
+      timestamp: new Date().toISOString(),
+    });
+
+    localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts));
+    loadMaintenanceFeed();
+    showFeedToast("✓ Comment posted!", "#29c48f");
+  }
+}
+
+// Show all comments
+function showAllComments(postId) {
+  let posts = JSON.parse(
+    localStorage.getItem("maintenance_feed_posts") || "[]",
+  );
+  const post = posts.find((p) => p.post_id === postId);
+
+  if (post && post.comments && post.comments.length > 0) {
+    let commentsHtml =
+      '<div style="padding: 12px; background: var(--bg-raised); border-radius: 12px;">';
+    commentsHtml +=
+      '<h4 style="margin-bottom: 12px; font-size: 14px;">All Comments</h4>';
+    post.comments.forEach((comment) => {
+      commentsHtml += `
+                <div class="feed-comment" style="margin-bottom: 8px;">
+                    <span class="feed-comment-author">${escapeHtml(comment.author)}:</span>
+                    <span class="feed-comment-text">${escapeHtml(comment.text)}</span>
+                    <span class="feed-comment-time">${formatTimeAgo(comment.timestamp)}</span>
+                </div>
+            `;
+    });
+    commentsHtml +=
+      '<button class="btn-secondary btn-sm" onclick="loadMaintenanceFeed()" style="margin-top: 12px;">Close</button>';
+    commentsHtml += "</div>";
+
+    const commentsSection = document.getElementById(`comments-${postId}`);
+    if (commentsSection) {
+      commentsSection.innerHTML = commentsHtml;
+    }
+  }
+}
+
+// Toggle like
+function toggleFeedLike(postId) {
+  let posts = JSON.parse(
+    localStorage.getItem("maintenance_feed_posts") || "[]",
+  );
+  const postIndex = posts.findIndex((p) => p.post_id === postId);
+  const userName = getCurrentUserName();
+
+  if (postIndex !== -1) {
+    const post = posts[postIndex];
+    if (!post.likes) post.likes = [];
+
+    const likedIndex = post.likes.indexOf(userName);
+    if (likedIndex === -1) {
+      post.likes.push(userName);
+      post.like_count = (post.like_count || 0) + 1;
+    } else {
+      post.likes.splice(likedIndex, 1);
+      post.like_count = (post.like_count || 0) - 1;
+    }
+
+    localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts));
+    loadMaintenanceFeed();
+  }
+}
+
+// Open photo viewer
+function openPhotoViewer(photoUrl) {
+  const viewer = document.createElement("div");
+  viewer.className = "photo-viewer-overlay";
+  viewer.innerHTML = `
+        <div class="photo-viewer-content">
+            <img src="${photoUrl}" alt="Full size photo">
+            <button class="photo-viewer-close" onclick="this.closest('.photo-viewer-overlay').remove()">✕</button>
+        </div>
+    `;
+  document.body.appendChild(viewer);
+  viewer.onclick = (e) => {
+    if (e.target === viewer) viewer.remove();
+  };
+}
+
+// Helper functions
+function getCurrentUserName() {
+  return (
+    document.querySelector(".user-name")?.textContent || "Maintenance Staff"
+  );
+}
+
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return "recently";
+  const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+}
+
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showFeedToast(message, color) {
+  let toast = document.getElementById("feedToastMsg");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "feedToastMsg";
+    toast.style.cssText =
+      "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 20px;border-radius:40px;z-index:3000;font-size:13px;transition:all 0.3s;opacity:0;pointer-events:none;white-space:nowrap;";
+    document.body.appendChild(toast);
+  }
+  toast.style.backgroundColor = color;
+  toast.textContent = message;
+  toast.style.opacity = "1";
+  setTimeout(() => {
+    toast.style.opacity = "0";
+  }, 2500);
+}
+
+// Add sample data
+function addSampleFeedPosts() {
+  const existing = localStorage.getItem("maintenance_feed_posts");
+  if (!existing || JSON.parse(existing).length === 0) {
+    const samplePosts = [
+      {
+        post_id: "sample_1",
+        timestamp: new Date().toISOString(),
+        author: "Rajesh Kumar",
+        post_type: "update",
+        title: "Unit 2 Bearing Replacement Started",
+        description:
+          "Removed old bearing. Housing cleaned. New bearing arrived from store.",
+        equipment: "Unit 2 Generator",
+        work_order_id: "WO-2024-0234",
+        tags: "bearing, replacement, urgent",
+        photos: [],
+        like_count: 5,
+        likes: ["Rajesh Kumar", "Sita Thapa"],
+        comments: [
+          {
+            id: 1,
+            author: "Sita Thapa",
+            text: "Good progress!",
+            timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
+          },
+        ],
+      },
+      {
+        post_id: "sample_2",
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        author: "Sita Thapa",
+        post_type: "complete",
+        title: "Transformer T1 Oil Filtration Complete",
+        description: "Oil filtration completed. DGA test results normal.",
+        equipment: "Main Transformer T1",
+        work_order_id: "WO-2024-0228",
+        tags: "transformer, oil",
+        photos: [],
+        like_count: 12,
+        likes: ["Rajesh Kumar", "Prakash Thapa"],
+        comments: [],
+      },
+    ];
+    localStorage.setItem("maintenance_feed_posts", JSON.stringify(samplePosts));
+  }
+}
+
+// Initialize
+function initMaintenanceFeed() {
+  addSampleFeedPosts();
+  loadMaintenanceFeed();
+  setupFeedPhotoHandlers();
+}
+
+// Auto-init when maintenance page is active
+const feedObserver = new MutationObserver(() => {
+  const maintPage = document.getElementById("page-maintenance");
+  const feedTab = document.querySelector('.maint-tab[data-tab="feed"]');
+  if (
+    maintPage &&
+    maintPage.classList.contains("active") &&
+    feedTab &&
+    feedTab.classList.contains("active")
+  ) {
+    loadMaintenanceFeed();
+  }
+});
+
+// ============================================
+// REPORT GENERATION FROM FEED POSTS
+// ============================================
+
+// Generate report from feed posts
+function generateFeedReport() {
+  let posts = JSON.parse(
+    localStorage.getItem("maintenance_feed_posts") || "[]",
+  );
+
+  if (posts.length === 0) {
+    showFeedToast("No posts to generate report", "#f5ae3a");
+    return;
+  }
+
+  // Get date range from user
+  const dateFrom = prompt(
+    "Enter START date (YYYY-MM-DD) or leave empty for all:",
+    "",
+  );
+  const dateTo = prompt(
+    "Enter END date (YYYY-MM-DD) or leave empty for all:",
+    "",
+  );
+
+  let filteredPosts = [...posts];
+
+  if (dateFrom) {
+    filteredPosts = filteredPosts.filter(
+      (p) => p.timestamp.split("T")[0] >= dateFrom,
+    );
+  }
+  if (dateTo) {
+    filteredPosts = filteredPosts.filter(
+      (p) => p.timestamp.split("T")[0] <= dateTo,
+    );
+  }
+
+  if (filteredPosts.length === 0) {
+    showFeedToast("No posts in selected date range", "#f5ae3a");
+    return;
+  }
+
+  const reportHtml = generateReportHtml(filteredPosts, dateFrom, dateTo);
+  showReportModal(reportHtml);
+}
+
+// Generate HTML report (with photos)
+function generateReportHtml(posts, dateFrom, dateTo) {
+  const totalPosts = posts.length;
+  const totalLikes = posts.reduce((sum, p) => sum + (p.like_count || 0), 0);
+  const totalComments = posts.reduce(
+    (sum, p) => sum + (p.comments?.length || 0),
+    0,
+  );
+  const totalPhotos = posts.reduce(
+    (sum, p) => sum + (p.photos?.length || 0),
+    0,
+  );
+
+  // Count by post type
+  const typeCount = {
+    update: posts.filter((p) => p.post_type === "update").length,
+    issue: posts.filter((p) => p.post_type === "issue").length,
+    complete: posts.filter((p) => p.post_type === "complete").length,
+    inspection: posts.filter((p) => p.post_type === "inspection").length,
+  };
+
+  // Count by equipment
+  const equipmentCount = {};
+  posts.forEach((p) => {
+    if (p.equipment) {
+      equipmentCount[p.equipment] = (equipmentCount[p.equipment] || 0) + 1;
+    }
+  });
+
+  const topEquipment = Object.entries(equipmentCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  // Group by date
+  const postsByDate = {};
+  posts.forEach((p) => {
+    const date = p.timestamp.split("T")[0];
+    if (!postsByDate[date]) postsByDate[date] = [];
+    postsByDate[date].push(p);
+  });
+
+  const dateRangeText =
+    dateFrom && dateTo
+      ? `${dateFrom} to ${dateTo}`
+      : dateFrom
+        ? `From ${dateFrom}`
+        : dateTo
+          ? `Until ${dateTo}`
+          : "All Time";
+
+  return `
+        <div class="report-content" style="font-family: var(--font-sans); max-width: 900px; margin: 0 auto;">
+            <div class="report-header" style="text-align: center; padding: 20px; border-bottom: 2px solid var(--accent-blue); margin-bottom: 24px;">
+                <h1 style="font-size: 24px; margin-bottom: 8px;">📋 Maintenance Activity Report</h1>
+                <p style="color: var(--text-muted); font-size: 12px;">Period: ${dateRangeText} | Generated: ${new Date().toLocaleString()}</p>
+            </div>
+            
+            <div class="report-section" style="margin-bottom: 24px;">
+                <h2 style="font-size: 18px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">📊 Summary Statistics</h2>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                    <div style="padding: 16px; background: var(--bg-raised); border-radius: 12px; text-align: center;">
+                        <div style="font-size: 28px; font-weight: 700;">${totalPosts}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Total Posts</div>
+                    </div>
+                    <div style="padding: 16px; background: var(--bg-raised); border-radius: 12px; text-align: center;">
+                        <div style="font-size: 28px; font-weight: 700;">${totalLikes}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Total Likes</div>
+                    </div>
+                    <div style="padding: 16px; background: var(--bg-raised); border-radius: 12px; text-align: center;">
+                        <div style="font-size: 28px; font-weight: 700;">${totalComments}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Total Comments</div>
+                    </div>
+                    <div style="padding: 16px; background: var(--bg-raised); border-radius: 12px; text-align: center;">
+                        <div style="font-size: 28px; font-weight: 700;">${totalPhotos}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Photos Attached</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="report-section" style="margin-bottom: 24px;">
+                <h2 style="font-size: 18px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">📈 Activity Breakdown</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                    <div style="padding: 16px; background: var(--bg-raised); border-radius: 12px;">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 12px;">By Post Type</div>
+                        <div>🔧 Task Updates: ${typeCount.update}</div>
+                        <div>⚠️ Issue Reports: ${typeCount.issue}</div>
+                        <div>✅ Completions: ${typeCount.complete}</div>
+                        <div>🔍 Inspections: ${typeCount.inspection}</div>
+                    </div>
+                    <div style="padding: 16px; background: var(--bg-raised); border-radius: 12px;">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 12px;">Top Equipment</div>
+                        ${topEquipment.map((eq) => `<div>📟 ${eq[0]}: ${eq[1]} posts</div>`).join("")}
+                        ${topEquipment.length === 0 ? "<div>No equipment data</div>" : ""}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="report-section" style="margin-bottom: 24px;">
+                <h2 style="font-size: 18px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">📝 Daily Activity Log</h2>
+                ${Object.entries(postsByDate)
+                  .map(
+                    ([date, dayPosts]) => `
+                    <div style="margin-bottom: 20px; background: var(--bg-raised); border-radius: 12px; overflow: hidden;">
+                        <div style="padding: 12px 16px; background: var(--accent-blue); color: white; font-weight: 600;">📅 ${date}</div>
+                        <div style="padding: 12px;">
+                            ${dayPosts
+                              .map(
+                                (post) => `
+                                <div style="padding: 12px 0; border-bottom: 1px solid var(--border);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                                        <span style="font-weight: 600;">${escapeHtml(post.title || post.description.substring(0, 40))}</span>
+                                        <span style="font-size: 11px; color: var(--text-muted);">by ${escapeHtml(post.author)}</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                        ${post.equipment ? `📟 ${escapeHtml(post.equipment)}` : ""}
+                                        ${post.work_order_id ? ` · 📋 ${escapeHtml(post.work_order_id)}` : ""}
+                                    </div>
+                                    <div style="font-size: 12px; margin-top: 8px;">
+                                        ${escapeHtml(post.description)}
+                                    </div>
+                                    ${
+                                      post.photos && post.photos.length > 0
+                                        ? `
+                                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                                            ${post.photos
+                                              .map(
+                                                (photo) => `
+                                                <img src="${photo}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);" alt="Maintenance photo">
+                                            `,
+                                              )
+                                              .join("")}
+                                        </div>
+                                    `
+                                        : ""
+                                    }
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                                        ❤️ ${post.like_count || 0} likes · 💬 ${post.comments?.length || 0} comments
+                                        ${post.photos?.length ? ` · 📸 ${post.photos.length} photos` : ""}
+                                    </div>
+                                    ${
+                                      post.comments && post.comments.length > 0
+                                        ? `
+                                        <div style="margin-top: 8px; padding-left: 16px; border-left: 2px solid var(--border);">
+                                            ${post.comments
+                                              .slice(0, 2)
+                                              .map(
+                                                (c) => `
+                                                <div style="font-size: 11px; margin-top: 4px;">
+                                                    <strong>${escapeHtml(c.author)}</strong>: ${escapeHtml(c.text)}
+                                                </div>
+                                            `,
+                                              )
+                                              .join("")}
+                                            ${post.comments.length > 2 ? `<div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">+${post.comments.length - 2} more comments</div>` : ""}
+                                        </div>
+                                    `
+                                        : ""
+                                    }
+                                </div>
+                            `,
+                              )
+                              .join("")}
+                        </div>
+                    </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+            
+            <div class="report-footer" style="text-align: center; padding: 20px; border-top: 1px solid var(--border); margin-top: 24px;">
+                <p style="font-size: 10px; color: var(--text-muted);">HydroPlant Manager - Generated Report</p>
+            </div>
+        </div>
+    `;
+}
+
+// Show report modal
+function showReportModal(htmlContent) {
+  const existingModal = document.getElementById("feedReportModal");
+  if (existingModal) existingModal.remove();
+
+  const modalHtml = `
+        <div id="feedReportModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 5000; display: flex; align-items: center; justify-content: center; overflow: auto;">
+            <div style="background: var(--bg-card); border-radius: 24px; width: 90%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;"><i class="fas fa-file-alt"></i> Maintenance Report</h3>
+                    <button onclick="this.closest('#feedReportModal').remove()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-raised); border: none; cursor: pointer;">✕</button>
+                </div>
+                <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                    ${htmlContent}
+                </div>
+                <div style="padding: 16px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px;">
+                    <button class="btn btn-secondary" onclick="this.closest('#feedReportModal').remove()">Close</button>
+                    <button class="btn btn-primary" onclick="printReport()"><i class="fas fa-print"></i> Print / Save PDF</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
+
+function printReport() {
+  const modal = document.getElementById("feedReportModal");
+  if (!modal) return;
+
+  const printContent = modal.querySelector(
+    'div[style*="overflow-y: auto"]',
+  ).innerHTML;
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+        <html>
+            <head>
+                <title>Maintenance Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    .report-header { text-align: center; }
+                    .report-section { margin-bottom: 20px; }
+                    h1 { color: #2c3e50; }
+                    img { max-width: 100%; height: auto; page-break-inside: avoid; }
+                    .report-content { max-width: 900px; margin: 0 auto; }
+                </style>
+            </head>
+            <body>${printContent}</body>
+        </html>
+    `);
+  printWindow.document.close();
+  printWindow.print();
+}
+feedObserver.observe(document.body, {
+  attributes: true,
+  subtree: true,
+  attributeFilter: ["class"],
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  addSampleFeedPosts();
+  setupFeedPhotoHandlers();
+  bindFeedActions();
+  if (
+    document.getElementById("page-maintenance")?.classList.contains("active")
+  ) {
+    loadMaintenanceFeed();
+  }
+});
