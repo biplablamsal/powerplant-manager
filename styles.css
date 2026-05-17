@@ -2996,16 +2996,30 @@ select.form-control {
   border-radius: 20px;
 }
 
+/* Replace your existing .faults-table-wrapper styles */
 .faults-table-wrapper {
-  overflow-x: auto;
-  max-height: 450px;
-  overflow-y: auto;
+  overflow-x: auto; /* Only horizontal scroll (for wide tables) */
+  overflow-y: visible; /* NO vertical scroll - let page scroll */
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* Make table body NOT scroll independently */
 .faults-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+}
+
+/* Remove max-height and overflow from table wrapper */
+.faults-card .faults-table-wrapper {
+  max-height: none;
+  overflow-y: visible;
+}
+
+/* If you have any overflow-y: auto on table wrapper, remove it */
+.faults-table-wrapper {
+  overflow-y: visible !important;
 }
 
 .faults-table th {
