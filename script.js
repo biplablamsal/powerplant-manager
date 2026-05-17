@@ -7100,14 +7100,13 @@ window.saveShiftLog = saveShiftLog;
 window.loadHistoricalDate = loadHistoricalDate;
 
 // ============================================
-// QUICK FAULT LOGGER - WITH PHOTO UPLOAD
+// QUICK FAULT LOGGER - MOBILE PHOTO UPLOAD
 // ============================================
 
 let quickSelectedSeverity = "Medium";
 let quickEditingId = null;
 let quickPhotos = []; // Store base64 images
 
-// Initialize quick fault module
 function initQuickFault() {
   // Load fault data
   const saved = localStorage.getItem("faults_items");
@@ -7139,14 +7138,43 @@ function initQuickFault() {
   const expandBtn = document.getElementById("expandDetailsBtn");
   if (expandBtn) expandBtn.onclick = toggleExpandDetails;
 
-  // Photo upload handlers
+  // MOBILE PHOTO HANDLERS
+  const takePhotoBtn = document.getElementById("takePhotoBtn");
+  const choosePhotoBtn = document.getElementById("choosePhotoBtn");
+  const cameraInput = document.getElementById("cameraInput");
+  const galleryInput = document.getElementById("galleryInput");
   const uploadArea = document.getElementById("photoUploadArea");
-  const photoInput = document.getElementById("photoInput");
 
-  if (uploadArea) {
-    uploadArea.onclick = () => photoInput.click();
+  // Take Photo - uses camera directly
+  if (takePhotoBtn && cameraInput) {
+    takePhotoBtn.onclick = () => {
+      cameraInput.click();
+    };
+    cameraInput.onchange = (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handlePhotoFiles(e.target.files);
+      }
+      cameraInput.value = ""; // Reset to allow taking another photo
+    };
+  }
 
-    // Drag and drop
+  // Choose from Gallery
+  if (choosePhotoBtn && galleryInput) {
+    choosePhotoBtn.onclick = () => {
+      galleryInput.click();
+    };
+    galleryInput.onchange = (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handlePhotoFiles(e.target.files);
+      }
+      galleryInput.value = ""; // Reset
+    };
+  }
+
+  // Desktop drag & drop (show only on desktop)
+  if (uploadArea && window.innerWidth > 768) {
+    uploadArea.style.display = "block";
+    uploadArea.onclick = () => galleryInput.click();
     uploadArea.ondragover = (e) => {
       e.preventDefault();
       uploadArea.classList.add("drag-over");
@@ -7159,10 +7187,6 @@ function initQuickFault() {
       uploadArea.classList.remove("drag-over");
       handlePhotoFiles(e.dataTransfer.files);
     };
-  }
-
-  if (photoInput) {
-    photoInput.onchange = (e) => handlePhotoFiles(e.target.files);
   }
 
   // Severity chips
@@ -7188,32 +7212,32 @@ function handlePhotoFiles(files) {
   const maxFiles = 5;
   const maxSize = 5 * 1024 * 1024; // 5MB
 
+  const filesArray = Array.from(files);
+
   for (
     let i = 0;
-    i < Math.min(files.length, maxFiles - quickPhotos.length);
+    i < Math.min(filesArray.length, maxFiles - quickPhotos.length);
     i++
   ) {
-    const file = files[i];
+    const file = filesArray[i];
     if (!file.type.startsWith("image/")) continue;
     if (file.size > maxSize) {
-      showQuickToast(`⚠️ ${file.name} exceeds 5MB limit`, "#f5ae3a");
+      showQuickToast(`⚠️ ${file.name.substring(0, 20)} exceeds 5MB`, "#f5ae3a");
       continue;
     }
 
     const reader = new FileReader();
     reader.onload = (e) => {
       quickPhotos.push({
-        id: Date.now() + i,
+        id: Date.now() + i + Math.random(),
         data: e.target.result,
         name: file.name,
+        size: file.size,
       });
       renderPhotoPreviews();
     };
     reader.readAsDataURL(file);
   }
-
-  // Clear input to allow re-upload of same files
-  document.getElementById("photoInput").value = "";
 }
 
 function renderPhotoPreviews() {
@@ -7221,7 +7245,8 @@ function renderPhotoPreviews() {
   if (!grid) return;
 
   if (quickPhotos.length === 0) {
-    grid.innerHTML = "";
+    grid.innerHTML =
+      '<div style="font-size: 12px; color: var(--text-muted); padding: 8px 0;">No photos attached</div>';
     return;
   }
 
@@ -7229,12 +7254,36 @@ function renderPhotoPreviews() {
     .map(
       (photo) => `
         <div class="photo-preview-item">
-            <img src="${photo.data}" alt="Fault photo">
-            <button class="photo-remove-btn" onclick="removePhoto('${photo.id}')">✕</button>
+            <img src="${photo.data}" alt="Fault photo" onclick="viewPhotoFullscreen('${photo.id}')">
+            <button class="photo-remove-btn" onclick="removePhoto('${photo.id}'); event.stopPropagation();">✕</button>
         </div>
     `,
     )
     .join("");
+}
+
+function viewPhotoFullscreen(photoId) {
+  const photo = quickPhotos.find((p) => p.id == photoId);
+  if (!photo) return;
+
+  // Create fullscreen viewer
+  const viewer = document.createElement("div");
+  viewer.className = "photo-viewer-modal";
+  viewer.innerHTML = `
+        <div class="photo-viewer-header">
+            <span style="color: white; font-weight: 600;">Fault Photo</span>
+            <button class="photo-viewer-close" onclick="this.closest('.photo-viewer-modal').remove()">✕</button>
+        </div>
+        <div class="photo-viewer-content">
+            <img src="${photo.data}" class="photo-viewer-image" alt="Fault photo">
+        </div>
+    `;
+  document.body.appendChild(viewer);
+
+  // Close on tap outside
+  viewer.onclick = (e) => {
+    if (e.target === viewer) viewer.remove();
+  };
 }
 
 function removePhoto(photoId) {
@@ -7324,7 +7373,7 @@ function saveQuickFault() {
     reportedBy: userName,
     technician: technician || "",
     resolutionNotes: "",
-    photos: photos, // Store photos with fault
+    photos: photos,
   };
 
   FaultsDB.items.unshift(newFault);
@@ -7364,11 +7413,11 @@ function renderQuickFaultTable() {
             <td>${fault.time}</td>
             <td>${fault.equipment}</td>
             <td><span class="severity-badge severity-${fault.severity.toLowerCase()}">${fault.severity}</span></td>
-            <td title="${fault.description}">${fault.description.substring(0, 40)}${fault.description.length > 40 ? "..." : ""}</td>
+            <td title="${fault.description}">${fault.description.substring(0, 35)}${fault.description.length > 35 ? "..." : ""}</td>
             <td><span class="severity-badge status-${fault.status.toLowerCase().replace(" ", "")}">${fault.status}</span></td>
             <td>
                 <button class="btn-icon-view" onclick="quickResolveFault(${fault.id})" title="Resolve"><i class="fas fa-check-circle"></i></button>
-                <button class="btn-icon-view" onclick="quickViewPhotos(${fault.id})" title="View Photos"><i class="fas fa-camera"></i></button>
+                ${photoCount > 0 ? `<button class="btn-icon-view" onclick="quickViewPhotos(${fault.id})" title="View Photos"><i class="fas fa-camera"></i></button>` : ""}
                 <button class="btn-icon-view" onclick="quickEditFault(${fault.id})" title="Edit"><i class="fas fa-edit"></i></button>
             </td>
         </tr>
@@ -7384,33 +7433,25 @@ function quickViewPhotos(faultId) {
     return;
   }
 
-  // Create photo viewer modal
+  // Create mobile-friendly photo viewer
   let modalHtml = `
-        <div class="quick-modal-overlay active" id="photoViewerModal" style="z-index: 2500;">
-            <div class="quick-modal-content" style="max-width: 500px;">
-                <div class="quick-modal-header">
-                    <h2><i class="fas fa-camera"></i> Fault Photos</h2>
-                    <button class="quick-modal-close" onclick="closePhotoViewer()"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="quick-modal-body" style="text-align: center;">
-                    <div style="display: flex; flex-direction: column; gap: 16px; max-height: 60vh; overflow-y: auto;">
+        <div class="photo-viewer-modal" id="photoViewerModal">
+            <div class="photo-viewer-header">
+                <span style="color: white; font-weight: 600;">${fault.photos.length} Photo(s)</span>
+                <button class="photo-viewer-close" onclick="closePhotoViewer()">✕</button>
+            </div>
+            <div class="photo-viewer-content" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; align-items: center;">
     `;
 
   fault.photos.forEach((photo) => {
-    modalHtml += `<img src="${photo}" style="width: 100%; border-radius: 12px; border: 1px solid var(--border);">`;
+    modalHtml += `<img src="${photo}" style="max-width: 100%; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px;">`;
   });
 
   modalHtml += `
-                    </div>
-                </div>
-                <div class="quick-modal-footer">
-                    <button class="btn-cancel" onclick="closePhotoViewer()">Close</button>
-                </div>
             </div>
         </div>
     `;
 
-  // Remove existing viewer if any
   const existing = document.getElementById("photoViewerModal");
   if (existing) existing.remove();
 
@@ -7498,7 +7539,13 @@ function quickUpdateFault(id) {
 }
 
 function showQuickToast(message, color) {
-  const toast = document.getElementById("quickToast");
+  let toast = document.getElementById("quickToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "quickToast";
+    toast.className = "quick-toast";
+    document.body.appendChild(toast);
+  }
   toast.style.backgroundColor = color;
   toast.innerText = message;
   toast.classList.add("show");
@@ -7512,3 +7559,4 @@ window.quickViewPhotos = quickViewPhotos;
 window.closeQuickModal = closeQuickModal;
 window.removePhoto = removePhoto;
 window.closePhotoViewer = closePhotoViewer;
+window.viewPhotoFullscreen = viewPhotoFullscreen;

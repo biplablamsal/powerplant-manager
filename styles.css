@@ -5697,3 +5697,119 @@ select.form-control {
 .photo-badge i {
   font-size: 10px;
 }
+/* Mobile Photo Upload Buttons */
+.mobile-photo-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-photo-btn:active {
+  transform: scale(0.97);
+}
+
+/* Photo preview grid - better on mobile */
+.photo-preview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.photo-preview-item {
+  position: relative;
+  width: calc(25% - 9px);
+  min-width: 70px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  backdrop-filter: blur(4px);
+}
+
+/* Photo viewer for mobile */
+.photo-viewer-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.photo-viewer-content {
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.photo-viewer-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 3001;
+}
+
+.photo-viewer-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.photo-viewer-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  margin: 60px auto 20px;
+  display: block;
+}
+
+@media (max-width: 550px) {
+  .photo-preview-item {
+    width: calc(33.33% - 8px);
+  }
+  .mobile-photo-btn {
+    font-size: 13px;
+    padding: 10px !important;
+  }
+}
