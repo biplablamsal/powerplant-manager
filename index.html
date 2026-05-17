@@ -963,166 +963,216 @@
       </div>
 
             <!-- PAGE: FAULTS & INCIDENTS -->
-      <div class="page-content page" id="page-faults">
-        <div class="page-header">
-          <div>
+      <!-- PAGE: FAULTS & INCIDENTS - REDESIGNED QUICK LOGGER -->
+<div class="page-content page" id="page-faults">
+    <div class="page-header">
+        <div>
             <div class="page-title">Faults & Incidents</div>
             <div class="page-subtitle">
-              Track equipment failures, alarms, and unplanned events
+                Track equipment failures, alarms, and unplanned events
             </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm" id="faultUploadBtn">
-              <i class="fas fa-cloud-upload-alt"></i> Import Excel
-            </button>
+        </div>
+        <div class="page-actions">
             <button class="btn btn-secondary btn-sm" id="faultExportBtn">
-              <i class="fas fa-download"></i> Export
-            </button>
-            <button class="btn btn-teal btn-sm" id="faultAddBtn">
-              <i class="fas fa-plus"></i> Log Fault
+                <i class="fas fa-download"></i> Export
             </button>
             <input type="file" id="faultFileInput" accept=".xlsx,.xls,.csv" style="display:none">
-          </div>
         </div>
+    </div>
 
-        <!-- Fault Statistics Cards -->
-        <div class="fault-stats-grid">
-          <div class="fault-stat-card">
+    <!-- QUICK FAULT CARD -->
+    <div class="quick-fault-card" id="quickFaultBtn">
+        <div class="quick-fault-left">
+            <div class="quick-fault-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="quick-fault-text">
+                <h4>⚡ Quick Log Fault</h4>
+                <p>Equipment, severity, description — done in seconds</p>
+            </div>
+        </div>
+        <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 20px;"></i>
+    </div>
+
+    <!-- Fault Statistics Cards -->
+    <div class="fault-stats-grid">
+        <div class="fault-stat-card">
             <div class="fault-stat-icon"><i class="fas fa-exclamation-circle"></i></div>
             <div class="fault-stat-value" id="openFaults">0</div>
             <div class="fault-stat-label">Open Faults</div>
-          </div>
-          <div class="fault-stat-card critical-stat">
+        </div>
+        <div class="fault-stat-card critical-stat">
             <div class="fault-stat-icon"><i class="fas fa-skull-crosswalk"></i></div>
             <div class="fault-stat-value" id="criticalFaults">0</div>
             <div class="fault-stat-label">Critical / High</div>
-          </div>
-          <div class="fault-stat-card">
+        </div>
+        <div class="fault-stat-card">
             <div class="fault-stat-icon"><i class="fas fa-clock"></i></div>
             <div class="fault-stat-value" id="mttrValue">0</div>
             <div class="fault-stat-label">MTTR (hours)</div>
-          </div>
-          <div class="fault-stat-card">
+        </div>
+        <div class="fault-stat-card">
             <div class="fault-stat-icon"><i class="fas fa-chart-pie"></i></div>
             <div class="fault-stat-value" id="topFaultType">-</div>
             <div class="fault-stat-label">Most Frequent</div>
-          </div>
         </div>
+    </div>
 
-        <!-- Filter Bar -->
-        <div class="fault-filter-bar">
-          <div class="filter-group">
+    <!-- Filter Bar -->
+    <div class="fault-filter-bar">
+        <div class="filter-group">
             <input type="text" id="faultSearch" placeholder="Search faults..." class="search-input">
             <select id="faultEquipmentFilter" class="filter-select">
-              <option value="all">All Equipment</option>
+                <option value="all">All Equipment</option>
             </select>
             <select id="faultSeverityFilter" class="filter-select">
-              <option value="all">All Severity</option>
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
+                <option value="all">All Severity</option>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
             </select>
             <select id="faultStatusFilter" class="filter-select">
-              <option value="all">All Status</option>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
+                <option value="all">All Status</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
             </select>
-            <select id="faultTypeFilter" class="filter-select">
-              <option value="all">All Types</option>
-              <option value="Electrical">Electrical</option>
-              <option value="Mechanical">Mechanical</option>
-              <option value="Instrumentation">Instrumentation</option>
-              <option value="Civil">Civil</option>
-              <option value="Operational">Operational</option>
-            </select>
-          </div>
-          <div class="date-filter-group">
+        </div>
+        <div class="date-filter-group">
             <input type="date" id="faultDateFrom" class="date-input" placeholder="From">
             <span>to</span>
             <input type="date" id="faultDateTo" class="date-input" placeholder="To">
             <button class="btn-filter" id="faultApplyFilter"><i class="fas fa-filter"></i> Apply</button>
             <button class="btn-reset" id="faultResetFilter"><i class="fas fa-undo"></i> Reset</button>
-          </div>
         </div>
+    </div>
 
-        <!-- Faults Table -->
-        <div class="faults-card">
-          <div class="faults-card-header">
+    <!-- Faults Table -->
+    <div class="faults-card">
+        <div class="faults-card-header">
             <div class="faults-card-title"><i class="fas fa-list-alt"></i> Fault Log</div>
             <span class="faults-count" id="faultsCount">0 records</span>
-          </div>
-          <div class="faults-table-wrapper">
+        </div>
+        <div class="faults-table-wrapper">
             <table class="faults-table" id="faultsTable">
-              <thead>
-                <tr>
-                  <th>Fault ID</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Equipment</th>
-                  <th>Type</th>
-                  <th>Severity</th>
-                  <th>Description</th>
-                  <th>Downtime</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="faultsTableBody"></tbody>
+                <thead>
+                    <tr>
+                        <th>Fault ID</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Equipment</th>
+                        <th>Severity</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="faultsTableBody"></tbody>
             </table>
-          </div>
         </div>
+    </div>
 
-        <!-- Two Column Charts -->
-        <div class="two-col">
-          <div class="fault-chart-card">
+    <!-- Charts -->
+    <div class="two-col">
+        <div class="fault-chart-card">
             <div class="fault-chart-header">
-              <div class="fault-chart-title"><i class="fas fa-chart-bar"></i> Faults by Equipment</div>
+                <div class="fault-chart-title"><i class="fas fa-chart-bar"></i> Faults by Equipment</div>
             </div>
             <div class="fault-chart-body">
-              <canvas id="faultsByEquipmentChart" height="220"></canvas>
+                <canvas id="faultsByEquipmentChart" height="220"></canvas>
             </div>
-          </div>
-          <div class="fault-chart-card">
-            <div class="fault-chart-header">
-              <div class="fault-chart-title"><i class="fas fa-chart-line"></i> Monthly Fault Trend</div>
-            </div>
-            <div class="fault-chart-body">
-              <canvas id="faultTrendChart" height="220"></canvas>
-            </div>
-          </div>
         </div>
+        <div class="fault-chart-card">
+            <div class="fault-chart-header">
+                <div class="fault-chart-title"><i class="fas fa-chart-line"></i> Monthly Fault Trend</div>
+            </div>
+            <div class="fault-chart-body">
+                <canvas id="faultTrendChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <div class="two-col">
-          <div class="fault-chart-card">
-            <div class="fault-chart-header">
-              <div class="fault-chart-title"><i class="fas fa-chart-pie"></i> Faults by Type</div>
-            </div>
-            <div class="fault-chart-body">
-              <canvas id="faultsByTypeChart" height="200"></canvas>
-            </div>
-          </div>
-          <div class="fault-chart-card">
-            <div class="fault-chart-header">
-              <div class="fault-chart-title"><i class="fas fa-chart-line"></i> MTTR Trend (Hours)</div>
-            </div>
-            <div class="fault-chart-body">
-              <canvas id="mttrTrendChart" height="200"></canvas>
-            </div>
-          </div>
+<!-- QUICK FAULT MODAL (with Photo Upload) -->
+<div class="quick-modal-overlay" id="quickFaultModal">
+    <div class="quick-modal-content">
+        <div class="quick-modal-header">
+            <h2><i class="fas fa-bolt"></i> Quick Fault</h2>
+            <button class="quick-modal-close" id="closeQuickModal"><i class="fas fa-times"></i></button>
         </div>
+        <div class="quick-modal-body">
+            <!-- Equipment -->
+            <div class="quick-form-group">
+                <label><i class="fas fa-microchip"></i> Equipment</label>
+                <select id="quickEquipment" class="quick-equip-select">
+                    <option value="Unit 1 Generator">Unit 1 Generator</option>
+                    <option value="Unit 2 Generator">Unit 2 Generator</option>
+                    <option value="Unit 3 Generator">Unit 3 Generator</option>
+                    <option value="Unit 1 Turbine">Unit 1 Turbine</option>
+                    <option value="Unit 2 Turbine">Unit 2 Turbine</option>
+                    <option value="Main Transformer T1">Main Transformer T1</option>
+                    <option value="Governor System">Governor System</option>
+                    <option value="Cooling Water Pump">Cooling Water Pump</option>
+                    <option value="Penstock Valve">Penstock Valve</option>
+                </select>
+            </div>
 
-        <!-- Uploaded Files Info -->
-        <div class="fault-files-card" id="faultFilesCard" style="display:none">
-          <div class="fault-files-header">
-            <div class="fault-files-title"><i class="fas fa-file-excel"></i> Imported Data</div>
-            <button class="btn-clear" id="clearFaultData">Clear All</button>
-          </div>
-          <div class="fault-files-body" id="faultFileList"></div>
+            <!-- Severity Chips -->
+            <div class="quick-form-group">
+                <label><i class="fas fa-chart-line"></i> Severity</label>
+                <div class="severity-chips" id="severityChips">
+                    <div class="severity-chip critical" data-sev="Critical">🔴 Critical</div>
+                    <div class="severity-chip high" data-sev="High">🟠 High</div>
+                    <div class="severity-chip medium active" data-sev="Medium">🟡 Medium</div>
+                    <div class="severity-chip low" data-sev="Low">🟢 Low</div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="quick-form-group">
+                <label><i class="fas fa-comment"></i> What happened?</label>
+                <input type="text" id="quickDescription" class="quick-desc-input" placeholder="e.g., Bearing temperature high, vibration detected...">
+            </div>
+
+            <!-- PHOTO UPLOAD SECTION -->
+            <div class="quick-form-group">
+                <label><i class="fas fa-camera"></i> Attach Photos <span style="font-size: 10px; color: var(--text-muted);">(up to 5 photos)</span></label>
+                <div class="photo-upload-area" id="photoUploadArea">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 28px; color: var(--accent-blue);"></i>
+                    <p style="margin-top: 8px; font-size: 12px;">Tap to take photo or select from gallery</p>
+                    <small style="color: var(--text-muted);">Supports JPG, PNG, HEIC · Max 5MB each</small>
+                    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display: none;">
+                </div>
+                <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+            </div>
+
+            <!-- Expandable Details -->
+            <div class="quick-expandable">
+                <button class="quick-expand-btn" id="expandDetailsBtn" type="button">
+                    <i class="fas fa-chevron-down"></i> Add technician & notes
+                </button>
+                <div class="quick-expand-content" id="expandContent">
+                    <div class="quick-form-group">
+                        <label>Assigned Technician</label>
+                        <input type="text" id="quickTechnician" class="quick-desc-input" placeholder="Who is working on this?">
+                    </div>
+                    <div class="quick-form-group">
+                        <label>Root Cause / Notes</label>
+                        <textarea id="quickNotes" rows="2" class="quick-desc-input" placeholder="Optional notes..."></textarea>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+        <div class="quick-modal-footer">
+            <button class="btn-cancel" id="cancelQuickModal">Cancel</button>
+            <button class="btn-submit" id="submitQuickFault"><i class="fas fa-check"></i> Log Fault</button>
+        </div>
+    </div>
+</div>
+
+<div class="quick-toast" id="quickToast">✓ Fault logged</div>
 
       <!-- Add/Edit Fault Modal -->
       <div class="fault-modal" id="faultModal" style="display:none">

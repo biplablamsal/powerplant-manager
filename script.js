@@ -3202,6 +3202,7 @@ function initFaults() {
   renderFaultsTable();
   renderFaultCharts();
   attachFaultEventListeners();
+  initQuickFault();
 
   // Show files card
   const filesCard = document.getElementById("faultFilesCard");
@@ -7097,3 +7098,417 @@ window.openShiftLogModal = openShiftLogModal;
 window.closeShiftLogModal = closeShiftLogModal;
 window.saveShiftLog = saveShiftLog;
 window.loadHistoricalDate = loadHistoricalDate;
+
+// ============================================
+// QUICK FAULT LOGGER - WITH PHOTO UPLOAD
+// ============================================
+
+let quickSelectedSeverity = "Medium";
+let quickEditingId = null;
+let quickPhotos = []; // Store base64 images
+
+// Initialize quick fault module
+function initQuickFault() {
+  // Load fault data
+  const saved = localStorage.getItem("faults_items");
+  if (saved) {
+    FaultsDB.items = JSON.parse(saved);
+  } else {
+    FaultsDB.items = defaultFaults;
+    localStorage.setItem("faults_items", JSON.stringify(FaultsDB.items));
+  }
+  FaultsDB.filteredItems = [...FaultsDB.items];
+
+  updateFaultStats();
+  renderQuickFaultTable();
+  renderFaultCharts();
+
+  // Attach quick modal events
+  const quickBtn = document.getElementById("quickFaultBtn");
+  if (quickBtn) quickBtn.onclick = openQuickModal;
+
+  const closeBtn = document.getElementById("closeQuickModal");
+  if (closeBtn) closeBtn.onclick = closeQuickModal;
+
+  const cancelBtn = document.getElementById("cancelQuickModal");
+  if (cancelBtn) cancelBtn.onclick = closeQuickModal;
+
+  const submitBtn = document.getElementById("submitQuickFault");
+  if (submitBtn) submitBtn.onclick = saveQuickFault;
+
+  const expandBtn = document.getElementById("expandDetailsBtn");
+  if (expandBtn) expandBtn.onclick = toggleExpandDetails;
+
+  // Photo upload handlers
+  const uploadArea = document.getElementById("photoUploadArea");
+  const photoInput = document.getElementById("photoInput");
+
+  if (uploadArea) {
+    uploadArea.onclick = () => photoInput.click();
+
+    // Drag and drop
+    uploadArea.ondragover = (e) => {
+      e.preventDefault();
+      uploadArea.classList.add("drag-over");
+    };
+    uploadArea.ondragleave = () => {
+      uploadArea.classList.remove("drag-over");
+    };
+    uploadArea.ondrop = (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove("drag-over");
+      handlePhotoFiles(e.dataTransfer.files);
+    };
+  }
+
+  if (photoInput) {
+    photoInput.onchange = (e) => handlePhotoFiles(e.target.files);
+  }
+
+  // Severity chips
+  document.querySelectorAll(".severity-chip").forEach((chip) => {
+    chip.onclick = () => {
+      document
+        .querySelectorAll(".severity-chip")
+        .forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      quickSelectedSeverity = chip.getAttribute("data-sev");
+    };
+  });
+
+  // Close modal on overlay click
+  const modal = document.getElementById("quickFaultModal");
+  if (modal)
+    modal.onclick = (e) => {
+      if (e.target === modal) closeQuickModal();
+    };
+}
+
+function handlePhotoFiles(files) {
+  const maxFiles = 5;
+  const maxSize = 5 * 1024 * 1024; // 5MB
+
+  for (
+    let i = 0;
+    i < Math.min(files.length, maxFiles - quickPhotos.length);
+    i++
+  ) {
+    const file = files[i];
+    if (!file.type.startsWith("image/")) continue;
+    if (file.size > maxSize) {
+      showQuickToast(`⚠️ ${file.name} exceeds 5MB limit`, "#f5ae3a");
+      continue;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      quickPhotos.push({
+        id: Date.now() + i,
+        data: e.target.result,
+        name: file.name,
+      });
+      renderPhotoPreviews();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Clear input to allow re-upload of same files
+  document.getElementById("photoInput").value = "";
+}
+
+function renderPhotoPreviews() {
+  const grid = document.getElementById("photoPreviewGrid");
+  if (!grid) return;
+
+  if (quickPhotos.length === 0) {
+    grid.innerHTML = "";
+    return;
+  }
+
+  grid.innerHTML = quickPhotos
+    .map(
+      (photo) => `
+        <div class="photo-preview-item">
+            <img src="${photo.data}" alt="Fault photo">
+            <button class="photo-remove-btn" onclick="removePhoto('${photo.id}')">✕</button>
+        </div>
+    `,
+    )
+    .join("");
+}
+
+function removePhoto(photoId) {
+  quickPhotos = quickPhotos.filter((p) => p.id != photoId);
+  renderPhotoPreviews();
+}
+
+function openQuickModal() {
+  // Reset form
+  document.getElementById("quickDescription").value = "";
+  document.getElementById("quickTechnician").value = "";
+  document.getElementById("quickNotes").value = "";
+  quickPhotos = [];
+  renderPhotoPreviews();
+  setDefaultChip("Medium");
+  quickEditingId = null;
+  document.getElementById("expandContent").classList.remove("open");
+  document.querySelector("#expandDetailsBtn i").className =
+    "fas fa-chevron-down";
+
+  document.getElementById("quickFaultModal").classList.add("active");
+}
+
+function closeQuickModal() {
+  document.getElementById("quickFaultModal").classList.remove("active");
+}
+
+function setDefaultChip(sev) {
+  document.querySelectorAll(".severity-chip").forEach((chip) => {
+    chip.classList.remove("active");
+    if (chip.getAttribute("data-sev") === sev) chip.classList.add("active");
+  });
+  quickSelectedSeverity = sev;
+}
+
+function toggleExpandDetails() {
+  const content = document.getElementById("expandContent");
+  const icon = document.querySelector("#expandDetailsBtn i");
+  content.classList.toggle("open");
+  icon.className = content.classList.contains("open")
+    ? "fas fa-chevron-up"
+    : "fas fa-chevron-down";
+}
+
+function saveQuickFault() {
+  const equipment = document.getElementById("quickEquipment").value;
+  const description = document.getElementById("quickDescription").value.trim();
+
+  if (!description) {
+    showQuickToast("⚠️ Please describe the fault", "#f5ae3a");
+    return;
+  }
+
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, "/");
+  const time = now.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const technician = document.getElementById("quickTechnician").value;
+  const notes = document.getElementById("quickNotes").value;
+
+  // Get current user
+  const userName =
+    document.querySelector(".user-name")?.textContent || "Rajesh Kumar";
+
+  const newId = Math.max(...FaultsDB.items.map((f) => f.id), 0) + 1;
+  const faultId = `FLT-${now.getFullYear()}-${String(newId).padStart(3, "0")}`;
+
+  // Store photos as array of base64 strings
+  const photos = quickPhotos.map((p) => p.data);
+
+  const newFault = {
+    id: newId,
+    faultId: faultId,
+    date: date,
+    time: time,
+    equipment: equipment,
+    type: quickSelectedSeverity === "Critical" ? "Mechanical" : "Electrical",
+    severity: quickSelectedSeverity,
+    description: description,
+    cause: notes || "",
+    responseTime: null,
+    resolutionTime: null,
+    downtime: 0,
+    status: "Open",
+    reportedBy: userName,
+    technician: technician || "",
+    resolutionNotes: "",
+    photos: photos, // Store photos with fault
+  };
+
+  FaultsDB.items.unshift(newFault);
+  localStorage.setItem("faults_items", JSON.stringify(FaultsDB.items));
+  FaultsDB.filteredItems = [...FaultsDB.items];
+
+  updateFaultStats();
+  renderQuickFaultTable();
+  renderFaultCharts();
+  closeQuickModal();
+  showQuickToast(`⚡ Fault logged with ${photos.length} photo(s)!`, "#2ecc71");
+}
+
+function renderQuickFaultTable() {
+  const tbody = document.getElementById("faultsTableBody");
+  if (!tbody) return;
+
+  if (FaultsDB.filteredItems.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="8" style="text-align:center; padding:40px;">No faults found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = FaultsDB.filteredItems
+    .slice(0, 50)
+    .map((fault) => {
+      const photoCount = fault.photos?.length || 0;
+      const photoBadge =
+        photoCount > 0
+          ? `<span class="photo-badge"><i class="fas fa-camera"></i> ${photoCount}</span>`
+          : "";
+
+      return `
+        <tr>
+            <td class="mono bold">${fault.faultId}${photoBadge}</td>
+            <td>${fault.date}</td>
+            <td>${fault.time}</td>
+            <td>${fault.equipment}</td>
+            <td><span class="severity-badge severity-${fault.severity.toLowerCase()}">${fault.severity}</span></td>
+            <td title="${fault.description}">${fault.description.substring(0, 40)}${fault.description.length > 40 ? "..." : ""}</td>
+            <td><span class="severity-badge status-${fault.status.toLowerCase().replace(" ", "")}">${fault.status}</span></td>
+            <td>
+                <button class="btn-icon-view" onclick="quickResolveFault(${fault.id})" title="Resolve"><i class="fas fa-check-circle"></i></button>
+                <button class="btn-icon-view" onclick="quickViewPhotos(${fault.id})" title="View Photos"><i class="fas fa-camera"></i></button>
+                <button class="btn-icon-view" onclick="quickEditFault(${fault.id})" title="Edit"><i class="fas fa-edit"></i></button>
+            </td>
+        </tr>
+    `;
+    })
+    .join("");
+}
+
+function quickViewPhotos(faultId) {
+  const fault = FaultsDB.items.find((f) => f.id === faultId);
+  if (!fault || !fault.photos?.length) {
+    showQuickToast("No photos attached to this fault", "#f5ae3a");
+    return;
+  }
+
+  // Create photo viewer modal
+  let modalHtml = `
+        <div class="quick-modal-overlay active" id="photoViewerModal" style="z-index: 2500;">
+            <div class="quick-modal-content" style="max-width: 500px;">
+                <div class="quick-modal-header">
+                    <h2><i class="fas fa-camera"></i> Fault Photos</h2>
+                    <button class="quick-modal-close" onclick="closePhotoViewer()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="quick-modal-body" style="text-align: center;">
+                    <div style="display: flex; flex-direction: column; gap: 16px; max-height: 60vh; overflow-y: auto;">
+    `;
+
+  fault.photos.forEach((photo) => {
+    modalHtml += `<img src="${photo}" style="width: 100%; border-radius: 12px; border: 1px solid var(--border);">`;
+  });
+
+  modalHtml += `
+                    </div>
+                </div>
+                <div class="quick-modal-footer">
+                    <button class="btn-cancel" onclick="closePhotoViewer()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+  // Remove existing viewer if any
+  const existing = document.getElementById("photoViewerModal");
+  if (existing) existing.remove();
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
+
+function closePhotoViewer() {
+  const viewer = document.getElementById("photoViewerModal");
+  if (viewer) viewer.remove();
+}
+
+function quickResolveFault(id) {
+  const fault = FaultsDB.items.find((f) => f.id === id);
+  if (
+    fault &&
+    confirm(`Mark "${fault.description.substring(0, 50)}" as resolved?`)
+  ) {
+    fault.status = "Resolved";
+    fault.resolutionTime = 2;
+    localStorage.setItem("faults_items", JSON.stringify(FaultsDB.items));
+    FaultsDB.filteredItems = [...FaultsDB.items];
+    updateFaultStats();
+    renderQuickFaultTable();
+    renderFaultCharts();
+    showQuickToast("✓ Fault resolved", "#29c48f");
+  }
+}
+
+function quickEditFault(id) {
+  const fault = FaultsDB.items.find((f) => f.id === id);
+  if (!fault) return;
+
+  quickEditingId = id;
+  document.getElementById("quickEquipment").value = fault.equipment;
+  document.getElementById("quickDescription").value = fault.description;
+  document.getElementById("quickTechnician").value = fault.technician || "";
+  document.getElementById("quickNotes").value = fault.cause || "";
+
+  // Load existing photos
+  quickPhotos = (fault.photos || []).map((photo, idx) => ({
+    id: Date.now() + idx,
+    data: photo,
+    name: `existing_${idx}`,
+  }));
+  renderPhotoPreviews();
+
+  setDefaultChip(fault.severity);
+
+  if (fault.cause || fault.technician) {
+    document.getElementById("expandContent").classList.add("open");
+    document.querySelector("#expandDetailsBtn i").className =
+      "fas fa-chevron-up";
+  }
+
+  document.getElementById("quickFaultModal").classList.add("active");
+
+  // Override save button for edit
+  const submitBtn = document.getElementById("submitQuickFault");
+  submitBtn.onclick = () => quickUpdateFault(id);
+}
+
+function quickUpdateFault(id) {
+  const index = FaultsDB.items.findIndex((f) => f.id === id);
+  if (index !== -1) {
+    FaultsDB.items[index] = {
+      ...FaultsDB.items[index],
+      equipment: document.getElementById("quickEquipment").value,
+      severity: quickSelectedSeverity,
+      description: document.getElementById("quickDescription").value,
+      technician: document.getElementById("quickTechnician").value,
+      cause: document.getElementById("quickNotes").value,
+      photos: quickPhotos.map((p) => p.data),
+    };
+    localStorage.setItem("faults_items", JSON.stringify(FaultsDB.items));
+    FaultsDB.filteredItems = [...FaultsDB.items];
+    updateFaultStats();
+    renderQuickFaultTable();
+    renderFaultCharts();
+    closeQuickModal();
+    showQuickToast("✏️ Fault updated", "#4a9de8");
+  }
+
+  // Restore original save handler
+  document.getElementById("submitQuickFault").onclick = saveQuickFault;
+}
+
+function showQuickToast(message, color) {
+  const toast = document.getElementById("quickToast");
+  toast.style.backgroundColor = color;
+  toast.innerText = message;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+// Make functions globally available
+window.quickResolveFault = quickResolveFault;
+window.quickEditFault = quickEditFault;
+window.quickViewPhotos = quickViewPhotos;
+window.closeQuickModal = closeQuickModal;
+window.removePhoto = removePhoto;
+window.closePhotoViewer = closePhotoViewer;
