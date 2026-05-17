@@ -284,7 +284,7 @@
           <div>
             <div class="page-title">Plant Dashboard</div>
             <div class="page-subtitle">
-              Kulekhani Hydropower Plant · Unit Status & Live Overview ·
+              Seti Nadi Hydropower Plant · Unit Status & Live Overview ·
               <span id="live-time"></span>
             </div>
           </div>
@@ -1396,7 +1396,328 @@
           </div>
         </div>
       </div>
+      <!-- PAGE: OPERATIONS (Offline - Manual Logging & Historical View) -->
+      <div class="page-content page" id="page-operations">
+          <div class="page-header">
+              <div>
+                  <div class="page-title">Operations Logbook</div>
+                  <div class="page-subtitle">
+                      Manual shift logging · Historical data review · Incident reporting
+                  </div>
+              </div>
+              <div class="page-actions">
+                  <button class="btn btn-primary btn-sm" onclick="openShiftLogModal()">
+                      <i class="fas fa-clipboard-list"></i> New Shift Log
+                  </button>
+                  <button class="btn btn-teal btn-sm" onclick="openIncidentModal()">
+                      <i class="fas fa-exclamation-triangle"></i> Report Incident
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="exportOpsLog()">
+                      <i class="fas fa-download"></i> Export Log
+                  </button>
+              </div>
+          </div>
 
+          <!-- Tab Navigation -->
+          <div class="ops-tabs">
+              <button class="ops-tab active" onclick="switchOpsTab('shift-logs')">
+                  <i class="fas fa-clipboard-list"></i> Shift Logs
+              </button>
+              <button class="ops-tab" onclick="switchOpsTab('historical')">
+                  <i class="fas fa-chart-line"></i> Historical Data
+              </button>
+              <button class="ops-tab" onclick="switchOpsTab('incidents')">
+                  <i class="fas fa-exclamation-circle"></i> Incidents
+              </button>
+              <button class="ops-tab" onclick="switchOpsTab('handover')">
+                  <i class="fas fa-exchange-alt"></i> Shift Handover
+              </button>
+          </div>
+
+          <!-- TAB 1: Shift Logs -->
+          <div id="ops-shift-logs" class="ops-tab-content active">
+              <!-- Current Shift Summary -->
+              <div class="ops-current-shift">
+                  <div class="ops-shift-header">
+                      <h3><i class="fas fa-user-clock"></i> Current Shift</h3>
+                      <div class="shift-info">
+                          <span id="current-shift-name">Morning Shift</span>
+                          <span id="current-shift-time">08:00 - 16:00</span>
+                          <span id="current-operator">Operator: Rajesh Kumar</span>
+                      </div>
+                  </div>
+                  <div class="shift-summary-stats">
+                      <div class="shift-stat">
+                          <div class="shift-stat-label">Generation This Shift</div>
+                          <div class="shift-stat-value" id="shift-gen">124.5</div>
+                          <div class="shift-stat-unit">MWh</div>
+                      </div>
+                      <div class="shift-stat">
+                          <div class="shift-stat-label">Running Hours</div>
+                          <div class="shift-stat-value" id="shift-hours">7.5</div>
+                          <div class="shift-stat-unit">hrs</div>
+                      </div>
+                      <div class="shift-stat">
+                          <div class="shift-stat-label">Avg Load</div>
+                          <div class="shift-stat-value" id="shift-avg-load">16.6</div>
+                          <div class="shift-stat-unit">MW</div>
+                      </div>
+                      <div class="shift-stat">
+                          <div class="shift-stat-label">Incidents</div>
+                          <div class="shift-stat-value" id="shift-incidents">0</div>
+                          <div class="shift-stat-unit"></div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Shift Log Entries -->
+              <div class="ops-card">
+                  <div class="ops-card-header">
+                      <div class="ops-card-title">
+                          <i class="fas fa-history"></i> Shift Log History
+                      </div>
+                      <button class="btn-icon" onclick="refreshShiftLogs()"><i class="fas fa-sync-alt"></i></button>
+                  </div>
+                  <div class="ops-card-body">
+                      <div class="shift-timeline" id="shift-timeline">
+                          <!-- Dynamic shift entries -->
+                          <div class="shift-entry">
+                              <div class="shift-time">08:00</div>
+                              <div class="shift-badge shift-start">SHIFT START</div>
+                              <div class="shift-desc">Morning shift started. All units normal. Unit 2 on maintenance.</div>
+                              <div class="shift-operator">Rajesh Kumar</div>
+                          </div>
+                          <div class="shift-entry">
+                              <div class="shift-time">10:30</div>
+                              <div class="shift-badge shift-note">NOTE</div>
+                              <div class="shift-desc">Grid frequency dropped to 49.8Hz. Adjusted load on Unit 1 & 3.</div>
+                              <div class="shift-operator">Rajesh Kumar</div>
+                          </div>
+                          <div class="shift-entry">
+                              <div class="shift-time">12:15</div>
+                              <div class="shift-badge shift-incident">INCIDENT</div>
+                              <div class="shift-desc">Unit 2 bearing temperature spike (82°C). Maintenance notified.</div>
+                              <div class="shift-operator">Rajesh Kumar</div>
+                          </div>
+                          <div class="shift-entry">
+                              <div class="shift-time">15:45</div>
+                              <div class="shift-badge shift-note">NOTE</div>
+                              <div class="shift-desc">Water level dropping. Reduced load to conserve.</div>
+                              <div class="shift-operator">Rajesh Kumar</div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- TAB 2: Historical Data (from uploaded Excel/CSV) -->
+          <div id="ops-historical" class="ops-tab-content">
+              <div class="ops-card">
+                  <div class="ops-card-header">
+                      <div class="ops-card-title">
+                          <i class="fas fa-database"></i> Load Historical Data
+                      </div>
+                      <button class="btn btn-primary btn-sm" id="ops-upload-btn">
+                          <i class="fas fa-cloud-upload-alt"></i> Upload Log File
+                      </button>
+                      <input type="file" id="ops-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+                  </div>
+                  <div class="ops-card-body">
+                      <div id="ops-data-status" class="ops-data-status">
+                          <i class="fas fa-info-circle"></i> No data loaded. Upload an Excel/CSV file to view historical operations data.
+                      </div>
+                      <div id="ops-data-summary" style="display:none;">
+                          <div class="data-summary-grid">
+                              <div class="summary-card">
+                                  <div class="summary-icon"><i class="fas fa-calendar"></i></div>
+                                  <div class="summary-info">
+                                      <div class="summary-label">Date Range</div>
+                                      <div class="summary-value" id="ops-date-range">-</div>
+                                  </div>
+                              </div>
+                              <div class="summary-card">
+                                  <div class="summary-icon"><i class="fas fa-bolt"></i></div>
+                                  <div class="summary-info">
+                                      <div class="summary-label">Total Generation</div>
+                                      <div class="summary-value" id="ops-total-gen">-</div>
+                                  </div>
+                              </div>
+                              <div class="summary-card">
+                                  <div class="summary-icon"><i class="fas fa-clock"></i></div>
+                                  <div class="summary-info">
+                                      <div class="summary-label">Operating Hours</div>
+                                      <div class="summary-value" id="ops-op-hours">-</div>
+                                  </div>
+                              </div>
+                              <div class="summary-card">
+                                  <div class="summary-icon"><i class="fas fa-chart-line"></i></div>
+                                  <div class="summary-info">
+                                      <div class="summary-label">Avg PF</div>
+                                      <div class="summary-value" id="ops-avg-pf">-</div>
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <!-- Date selector for historical view -->
+                          <div class="ops-date-selector">
+                              <label>Select Date:</label>
+                              <select id="ops-date-select"></select>
+                              <button class="btn-sm" onclick="loadHistoricalDate()">View</button>
+                          </div>
+                          
+                          <!-- Hourly data table for selected date -->
+                          <div class="historical-table-wrapper">
+                              <table class="historical-table" id="historical-hourly-table">
+                                  <thead>
+                                      <tr><th>Hour</th><th>U1 MW</th><th>U2 MW</th><th>Total MW</th><th>PF</th><th>Status</th></tr>
+                                  </thead>
+                                  <tbody id="historical-table-body"></tbody>
+                              </table>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- TAB 3: Incidents -->
+          <div id="ops-incidents" class="ops-tab-content">
+              <div class="ops-card">
+                  <div class="ops-card-header">
+                      <div class="ops-card-title">
+                          <i class="fas fa-exclamation-triangle"></i> Incident Report Log
+                      </div>
+                      <button class="btn-teal btn-sm" onclick="openIncidentModal()">
+                          <i class="fas fa-plus"></i> Report Incident
+                      </button>
+                  </div>
+                  <div class="ops-card-body">
+                      <div class="incident-filters">
+                          <input type="text" placeholder="Search incidents..." id="incident-search" class="search-input">
+                          <select id="incident-severity-filter">
+                              <option value="all">All Severity</option>
+                              <option value="critical">Critical</option>
+                              <option value="high">High</option>
+                              <option value="medium">Medium</option>
+                              <option value="low">Low</option>
+                          </select>
+                      </div>
+                      <div class="incident-list" id="incident-list">
+                          <!-- Dynamic incident entries -->
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- TAB 4: Shift Handover -->
+          <div id="ops-handover" class="ops-tab-content">
+              <div class="ops-two-col">
+                  <div class="ops-card">
+                      <div class="ops-card-header">
+                          <div class="ops-card-title">
+                              <i class="fas fa-pen"></i> Shift Handover Report
+                          </div>
+                      </div>
+                      <div class="ops-card-body">
+                          <form id="handover-form">
+                              <div class="form-group">
+                                  <label>Outgoing Operator</label>
+                                  <input type="text" id="outgoing-operator" class="form-control" placeholder="Name">
+                              </div>
+                              <div class="form-group">
+                                  <label>Incoming Operator</label>
+                                  <input type="text" id="incoming-operator" class="form-control" placeholder="Name">
+                              </div>
+                              <div class="form-group">
+                                  <label>Shift Summary</label>
+                                  <textarea id="shift-summary" rows="4" class="form-control" 
+                                      placeholder="Summarize key events, issues, and pending tasks..."></textarea>
+                              </div>
+                              <div class="form-group">
+                                  <label>Pending Issues</label>
+                                  <textarea id="pending-issues" rows="3" class="form-control"
+                                      placeholder="List any unresolved issues for next shift..."></textarea>
+                              </div>
+                              <div class="form-group">
+                                  <label>Equipment Status</label>
+                                  <div class="equipment-status-grid">
+                                      <label><input type="checkbox" class="equip-check"> Unit 1</label>
+                                      <label><input type="checkbox" class="equip-check"> Unit 2</label>
+                                      <label><input type="checkbox" class="equip-check"> Unit 3</label>
+                                      <label><input type="checkbox" class="equip-check"> Unit 4</label>
+                                      <label><input type="checkbox" class="equip-check"> Transformer</label>
+                                      <label><input type="checkbox" class="equip-check"> Governor</label>
+                                  </div>
+                              </div>
+                              <button type="button" class="btn btn-primary" onclick="submitHandover()">
+                                  <i class="fas fa-check"></i> Submit Handover Report
+                              </button>
+                          </form>
+                      </div>
+                  </div>
+                  
+                  <div class="ops-card">
+                      <div class="ops-card-header">
+                          <div class="ops-card-title">
+                              <i class="fas fa-history"></i> Previous Handovers
+                          </div>
+                      </div>
+                      <div class="ops-card-body">
+                          <div class="handover-list" id="handover-list">
+                              <!-- Dynamic handover history -->
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+<!-- Modal: Add Shift Log Entry -->
+<div id="shiftLogModal" class="ops-modal" style="display:none">
+    <div class="ops-modal-content">
+        <div class="ops-modal-header">
+            <h3><i class="fas fa-clipboard-list"></i> Add Shift Log Entry</h3>
+            <button class="modal-close" onclick="closeShiftLogModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="ops-modal-body">
+            <form id="shiftLogForm">
+                <div class="form-group">
+                    <label>Time</label>
+                    <input type="time" id="log-time" class="form-control" value="12:00">
+                </div>
+                <div class="form-group">
+                    <label>Entry Type</label>
+                    <select id="log-type" class="form-control">
+                        <option value="note">📝 General Note</option>
+                        <option value="incident">⚠️ Incident</option>
+                        <option value="maintenance">🔧 Maintenance</option>
+                        <option value="parameter">📊 Parameter Change</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="log-description" rows="4" class="form-control" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Related Equipment</label>
+                    <select id="log-equipment" class="form-control">
+                        <option value="">None</option>
+                        <option value="Unit 1">Unit 1</option>
+                        <option value="Unit 2">Unit 2</option>
+                        <option value="Unit 3">Unit 3</option>
+                        <option value="Unit 4">Unit 4</option>
+                        <option value="Transformer">Transformer</option>
+                        <option value="Governor">Governor</option>
+                        <option value="Turbine">Turbine</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="ops-modal-footer">
+            <button class="btn btn-secondary" onclick="closeShiftLogModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveShiftLog()">Save Entry</button>
+        </div>
+    </div>
+</div>
             <!-- PAGE: DOCUMENTS -->
       <div class="page-content page" id="page-documents">
         <div class="page-header">
