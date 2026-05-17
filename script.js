@@ -7307,8 +7307,14 @@ function openQuickModal() {
   document.getElementById("quickFaultModal").classList.add("active");
 }
 
+// Make sure your closeQuickModal function looks like this:
 function closeQuickModal() {
-  document.getElementById("quickFaultModal").classList.remove("active");
+  const modal = document.getElementById("quickFaultModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+  // Reset form when closing
+  resetQuickForm();
 }
 
 function setDefaultChip(sev) {
@@ -7328,6 +7334,7 @@ function toggleExpandDetails() {
     : "fas fa-chevron-down";
 }
 
+// Replace your existing saveQuickFault function with this:
 function saveQuickFault() {
   const equipment = document.getElementById("quickEquipment").value;
   const description = document.getElementById("quickDescription").value.trim();
@@ -7345,15 +7352,11 @@ function saveQuickFault() {
   });
   const technician = document.getElementById("quickTechnician").value;
   const notes = document.getElementById("quickNotes").value;
-
-  // Get current user
   const userName =
     document.querySelector(".user-name")?.textContent || "Rajesh Kumar";
 
   const newId = Math.max(...FaultsDB.items.map((f) => f.id), 0) + 1;
   const faultId = `FLT-${now.getFullYear()}-${String(newId).padStart(3, "0")}`;
-
-  // Store photos as array of base64 strings
   const photos = quickPhotos.map((p) => p.data);
 
   const newFault = {
@@ -7381,12 +7384,32 @@ function saveQuickFault() {
   FaultsDB.filteredItems = [...FaultsDB.items];
 
   updateFaultStats();
-  renderQuickFaultTable();
+  renderQuickFaultTable(); // This will now show photo badge
   renderFaultCharts();
+
+  // CRITICAL FIX: Close modal properly
   closeQuickModal();
+
+  // Reset form for next use
+  resetQuickForm();
+
   showQuickToast(`⚡ Fault logged with ${photos.length} photo(s)!`, "#2ecc71");
 }
 
+// Add this helper function to reset form
+function resetQuickForm() {
+  document.getElementById("quickDescription").value = "";
+  document.getElementById("quickTechnician").value = "";
+  document.getElementById("quickNotes").value = "";
+  quickPhotos = [];
+  renderPhotoPreviews();
+  setDefaultChip("Medium");
+  document.getElementById("expandContent").classList.remove("open");
+  const expandIcon = document.querySelector("#expandDetailsBtn i");
+  if (expandIcon) expandIcon.className = "fas fa-chevron-down";
+}
+
+// Replace your existing renderQuickFaultTable with this:
 function renderQuickFaultTable() {
   const tbody = document.getElementById("faultsTableBody");
   if (!tbody) return;
@@ -7403,22 +7426,38 @@ function renderQuickFaultTable() {
       const photoCount = fault.photos?.length || 0;
       const photoBadge =
         photoCount > 0
-          ? `<span class="photo-badge"><i class="fas fa-camera"></i> ${photoCount}</span>`
+          ? `<span class="photo-badge" style="cursor:pointer;" onclick="event.stopPropagation(); quickViewPhotos(${fault.id})"><i class="fas fa-camera"></i> ${photoCount}</span>`
           : "";
+
+      // Determine status class
+      let statusClass = "status-open";
+      if (fault.status === "Resolved") statusClass = "status-resolved";
+      else if (fault.status === "Closed") statusClass = "status-closed";
+      else if (fault.status === "In Progress") statusClass = "status-progress";
 
       return `
         <tr>
-            <td class="mono bold">${fault.faultId}${photoBadge}</td>
+            <td class="mono bold">${fault.faultId} ${photoBadge}</td>
             <td>${fault.date}</td>
             <td>${fault.time}</td>
             <td>${fault.equipment}</td>
             <td><span class="severity-badge severity-${fault.severity.toLowerCase()}">${fault.severity}</span></td>
             <td title="${fault.description}">${fault.description.substring(0, 35)}${fault.description.length > 35 ? "..." : ""}</td>
-            <td><span class="severity-badge status-${fault.status.toLowerCase().replace(" ", "")}">${fault.status}</span></td>
-            <td>
-                <button class="btn-icon-view" onclick="quickResolveFault(${fault.id})" title="Resolve"><i class="fas fa-check-circle"></i></button>
-                ${photoCount > 0 ? `<button class="btn-icon-view" onclick="quickViewPhotos(${fault.id})" title="View Photos"><i class="fas fa-camera"></i></button>` : ""}
-                <button class="btn-icon-view" onclick="quickEditFault(${fault.id})" title="Edit"><i class="fas fa-edit"></i></button>
+            <td><span class="severity-badge ${statusClass}">${fault.status}</span></td>
+            <td class="action-buttons" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="btn-icon-view" onclick="quickResolveFault(${fault.id})" title="Resolve" style="background: rgba(46,204,113,0.15); color: #2ecc71; padding: 6px 10px; border-radius: 8px;">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                ${
+                  photoCount > 0
+                    ? `<button class="btn-icon-view" onclick="quickViewPhotos(${fault.id})" title="View Photos" style="background: rgba(74,157,232,0.15); color: #4a9de8; padding: 6px 10px; border-radius: 8px;">
+                    <i class="fas fa-camera"></i>
+                </button>`
+                    : ""
+                }
+                <button class="btn-icon-view" onclick="quickEditFault(${fault.id})" title="Edit" style="background: rgba(245,174,58,0.15); color: #f5ae3a; padding: 6px 10px; border-radius: 8px;">
+                    <i class="fas fa-edit"></i>
+                </button>
             </td>
         </tr>
     `;
@@ -7426,36 +7465,90 @@ function renderQuickFaultTable() {
     .join("");
 }
 
+// Replace your existing quickViewPhotos with this:
 function quickViewPhotos(faultId) {
   const fault = FaultsDB.items.find((f) => f.id === faultId);
-  if (!fault || !fault.photos?.length) {
+  if (!fault) return;
+
+  if (!fault.photos || fault.photos.length === 0) {
     showQuickToast("No photos attached to this fault", "#f5ae3a");
     return;
   }
 
-  // Create mobile-friendly photo viewer
-  let modalHtml = `
-        <div class="photo-viewer-modal" id="photoViewerModal">
-            <div class="photo-viewer-header">
-                <span style="color: white; font-weight: 600;">${fault.photos.length} Photo(s)</span>
-                <button class="photo-viewer-close" onclick="closePhotoViewer()">✕</button>
+  // Create mobile-friendly photo viewer modal
+  let photosHtml = "";
+  fault.photos.forEach((photo, index) => {
+    photosHtml += `
+            <div style="margin-bottom: 16px; text-align: center;">
+                <img src="${photo}" alt="Fault photo ${index + 1}" 
+                     style="max-width: 100%; border-radius: 16px; border: 1px solid var(--border); cursor: pointer;"
+                     onclick="window.open(this.src, '_blank')">
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Photo ${index + 1} of ${fault.photos.length}</div>
             </div>
-            <div class="photo-viewer-content" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; align-items: center;">
-    `;
-
-  fault.photos.forEach((photo) => {
-    modalHtml += `<img src="${photo}" style="max-width: 100%; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px;">`;
+        `;
   });
 
-  modalHtml += `
+  // Create modal HTML
+  const modalHtml = `
+        <div class="photo-viewer-modal" id="photoViewerModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        ">
+            <div style="
+                position: sticky;
+                top: 0;
+                background: rgba(0,0,0,0.9);
+                padding: 16px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                z-index: 10;
+            ">
+                <div>
+                    <div style="color: white; font-weight: 600;">${fault.faultId}</div>
+                    <div style="color: #aaa; font-size: 11px;">${fault.equipment} · ${fault.severity}</div>
+                </div>
+                <button onclick="closePhotoViewer()" style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    font-size: 20px;
+                    cursor: pointer;
+                ">✕</button>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                    <div style="color: #aaa; font-size: 11px; margin-bottom: 4px;">Description</div>
+                    <div style="color: white; font-size: 13px;">${fault.description}</div>
+                </div>
+                ${photosHtml}
             </div>
         </div>
     `;
 
+  // Remove existing viewer if any
   const existing = document.getElementById("photoViewerModal");
   if (existing) existing.remove();
 
   document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
+
+function closePhotoViewer() {
+  const viewer = document.getElementById("photoViewerModal");
+  if (viewer) viewer.remove();
 }
 
 function closePhotoViewer() {
