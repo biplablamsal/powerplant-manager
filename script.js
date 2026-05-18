@@ -1,133 +1,3 @@
-// ============================================
-// GOOGLE SHEETS SYNC CONFIGURATION
-// ============================================
-
-const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxo9IcFLC6haxRkkRLnEbet5jM5cR87O2A29ONpJ-oNtXtA3tCaaENLV54eRH0LShd7/exec";
-
-let syncEnabled = true;
-let syncInProgress = false;
-
-// ============================================
-// GOOGLE SHEETS SYNC FUNCTIONS
-// ============================================
-
-// Sync posts from Google Sheets
-async function syncPostsFromSheets() {
-  if (!syncEnabled) return false;
-
-  try {
-    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getPosts`);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.posts && data.posts.length > 0) {
-        localStorage.setItem(
-          "maintenance_feed_posts",
-          JSON.stringify(data.posts),
-        );
-        loadMaintenanceFeed();
-        return true;
-      }
-    }
-  } catch (error) {
-    console.log("Sync from sheets failed:", error);
-  }
-  return false;
-}
-
-// Push post to Google Sheets
-async function pushPostToSheets(post) {
-  if (!syncEnabled) return false;
-
-  try {
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "createPost", post: post }),
-    });
-    return true;
-  } catch (error) {
-    console.log("Push to sheets failed:", error);
-    return false;
-  }
-}
-
-// Push comment to Google Sheets
-async function pushCommentToSheets(postId, author, text) {
-  if (!syncEnabled) return false;
-
-  try {
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "addComment",
-        post_id: postId,
-        author: author,
-        text: text,
-      }),
-    });
-    return true;
-  } catch (error) {
-    console.log("Push comment failed:", error);
-    return false;
-  }
-}
-
-// Push like to Google Sheets
-async function pushLikeToSheets(postId, username) {
-  if (!syncEnabled) return false;
-
-  try {
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "toggleLike",
-        post_id: postId,
-        username: username,
-      }),
-    });
-    return true;
-  } catch (error) {
-    console.log("Push like failed:", error);
-    return false;
-  }
-}
-
-// Manual sync button function
-function manualSync() {
-  if (syncInProgress) {
-    showFeedToast("Sync already in progress...", "#f5ae3a");
-    return;
-  }
-
-  syncInProgress = true;
-  showFeedToast("🔄 Syncing with cloud...", "#4a9de8");
-
-  syncPostsFromSheets()
-    .then(() => {
-      syncInProgress = false;
-      showFeedToast("✓ Sync complete!", "#29c48f");
-    })
-    .catch(() => {
-      syncInProgress = false;
-      showFeedToast("⚠️ Sync failed", "#f5ae3a");
-    });
-}
-
-// Toggle sync mode
-function toggleSyncMode() {
-  syncEnabled = !syncEnabled;
-  showFeedToast(
-    syncEnabled ? "Cloud sync ENABLED" : "Local mode only",
-    syncEnabled ? "#29c48f" : "#f5ae3a",
-  );
-}
-// ============================================
 // NAVIGATION & CORE FUNCTIONS
 // ============================================
 
@@ -7964,11 +7834,6 @@ function submitInlinePost() {
     JSON.stringify(posts.slice(0, 200)),
   );
 
-  // Push to Google Sheets (after saving to localStorage)
-  if (syncEnabled) {
-    pushPostToSheets(newPost);
-  }
-
   clearFeedPhotos();
   toggleInlinePostForm();
   loadMaintenanceFeed();
@@ -8695,4 +8560,257 @@ document.addEventListener("DOMContentLoaded", () => {
   ) {
     loadMaintenanceFeed();
   }
+
+  // ============================================
+  // GOOGLE SHEETS SYNC - GENERATION DASHBOARD
+  // ============================================
+
+  // YOUR DEPLOYMENT URL
+  const GEN_SHEET_API =
+    "https://script.google.com/macros/s/AKfycbwH6jOeH2dcB7m_0WUEACW84S9KJNh9mZLAZUe2wpQEAogN4_gLac9TfsIyCPGP7lklwA/exec";
+
+  let genSyncEnabled = true;
+  let genSyncInProgress = false;
+
+  // Fetch data from Google Sheet
+  async function fetchGenerationFromSheet(dateFrom = null, dateTo = null) {
+    if (!genSyncEnabled) {
+      console.log("Sync disabled");
+      return false;
+    }
+
+    if (genSyncInProgress) {
+      showGenSheetStatus("Sync already in progress...", "warning");
+      return false;
+    }
+
+    genSyncInProgress = true;
+    showGenSheetStatus("🔄 Syncing with Google Sheets...", "info");
+
+    try {
+      let url = GEN_SHEET_API;
+      const params = [];
+      if (dateFrom) params.push(`from=${dateFrom}`);
+      if (dateTo) params.push(`to=${dateTo}`);
+      if (params.length) url += "?" + params.join("&");
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.success && data.daily && data.daily.length > 0) {
+        // Convert to GenDB format
+        const days = data.daily.map((day) => ({
+          bsDate: day.date,
+          computed: {
+            u1Energy: day.u1_energy || 0,
+            u2Energy: day.u2_energy || 0,
+            totalEnergy: day.total_energy || 0,
+            u1AvgMW: day.total_energy / (day.op_hours || 1),
+            u2AvgMW: day.u2_energy / (day.op_hours || 1),
+            maxMW: day.max_mw || 0,
+            opHours: day.op_hours || 0,
+            shutdownHrs: 24 - (day.op_hours || 0),
+            avgPF: 0.95,
+            avgHz: 50.0,
+          },
+        }));
+
+        // Store in GenDB
+        if (typeof GenDB !== "undefined") {
+          GenDB.allDays = days;
+          GenDB.filteredDays = days;
+        }
+
+        // Save to localStorage
+        localStorage.setItem("gen_days", JSON.stringify(days));
+
+        // Refresh dashboard
+        if (typeof onGenDataLoaded === "function") {
+          onGenDataLoaded();
+        } else {
+          updateGenDashboardWithData(days, data.stats);
+        }
+
+        showGenSheetStatus(`✓ Synced ${days.length} days`, "success");
+        return data;
+      } else {
+        showGenSheetStatus("⚠️ No data found in sheet", "warning");
+        return false;
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      showGenSheetStatus(`✗ Sync failed: ${error.message}`, "error");
+      return false;
+    } finally {
+      genSyncInProgress = false;
+    }
+  }
+
+  // Push single reading to Google Sheet
+  async function pushReadingToSheet(reading) {
+    if (!genSyncEnabled) {
+      showGenSheetStatus("Sync disabled", "warning");
+      return false;
+    }
+
+    showGenSheetStatus("📤 Saving to Google Sheet...", "info");
+
+    try {
+      await fetch(GEN_SHEET_API, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reading),
+      });
+
+      showGenSheetStatus("✓ Data saved to Google Sheet!", "success");
+      return true;
+    } catch (error) {
+      console.error("Push error:", error);
+      showGenSheetStatus("⚠️ Could not push to sheet", "warning");
+      return false;
+    }
+  }
+
+  // Manual sync button function
+  function manualGenSync() {
+    fetchGenerationFromSheet();
+  }
+
+  // Toggle sync mode
+  function toggleGenSync() {
+    genSyncEnabled = !genSyncEnabled;
+    showGenSheetStatus(
+      genSyncEnabled ? "🌐 Cloud sync ENABLED" : "📴 Local mode only",
+      genSyncEnabled ? "success" : "info",
+    );
+  }
+
+  // Show status message
+  function showGenSheetStatus(message, type) {
+    let statusDiv = document.getElementById("genSheetStatus");
+    if (!statusDiv) {
+      statusDiv = document.createElement("div");
+      statusDiv.id = "genSheetStatus";
+      statusDiv.style.cssText = `
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            animation: fadeInUp 0.3s ease;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+      document.body.appendChild(statusDiv);
+    }
+
+    const colors = {
+      success: "#2ecc71",
+      error: "#e74c3c",
+      info: "#3d8ef7",
+      warning: "#f5a623",
+    };
+
+    statusDiv.style.backgroundColor = colors[type] || colors.info;
+    statusDiv.style.color = "white";
+    statusDiv.innerHTML = message;
+    statusDiv.style.display = "block";
+
+    setTimeout(() => {
+      statusDiv.style.display = "none";
+    }, 3000);
+  }
+
+  // Update dashboard manually
+  function updateGenDashboardWithData(days, stats) {
+    if (!days || days.length === 0) return;
+
+    // Update quick stats if they exist
+    const qsDays = document.getElementById("qsDays");
+    const qsHours = document.getElementById("qsHours");
+    const genDashTitle = document.getElementById("genDashTitle");
+
+    if (qsDays) qsDays.innerHTML = days.length;
+    if (qsHours)
+      qsHours.innerHTML = days.reduce((sum, d) => sum + d.computed.opHours, 0);
+    if (genDashTitle)
+      genDashTitle.innerHTML = `Generation Summary - ${days.length} Days`;
+
+    // Update KPI row
+    const kpiRow = document.getElementById("genKpiRow");
+    if (kpiRow && stats) {
+      kpiRow.innerHTML = `
+            <div class="gen-kpi-card cyan">
+                <div class="gen-kpi-label"><i class="fas fa-bolt"></i> TOTAL GENERATION</div>
+                <div class="gen-kpi-value">${stats.total_generation_mwh || 0}<span class="gen-kpi-unit">MWh</span></div>
+                <div class="gen-kpi-sub">Over ${days.length} days</div>
+            </div>
+            <div class="gen-kpi-card blue">
+                <div class="gen-kpi-label"><i class="fas fa-charging-station"></i> EXPORTED</div>
+                <div class="gen-kpi-value">${stats.total_export_mwh || 0}<span class="gen-kpi-unit">MWh</span></div>
+                <div class="gen-kpi-sub">To Grid</div>
+            </div>
+            <div class="gen-kpi-card green">
+                <div class="gen-kpi-label"><i class="fas fa-chart-line"></i> AVG DAILY</div>
+                <div class="gen-kpi-value">${stats.avg_daily_gen || 0}<span class="gen-kpi-unit">MWh</span></div>
+                <div class="gen-kpi-sub">Per day average</div>
+            </div>
+            <div class="gen-kpi-card amber">
+                <div class="gen-kpi-label"><i class="fas fa-calendar"></i> COVERAGE</div>
+                <div class="gen-kpi-value">${stats.total_days || 0}<span class="gen-kpi-unit">days</span></div>
+                <div class="gen-kpi-sub">Data recorded</div>
+            </div>
+        `;
+    }
+
+    // Render daily table
+    renderGenDailyTableFromData(days);
+  }
+
+  // Render daily table
+  function renderGenDailyTableFromData(days) {
+    const tbody = document.getElementById("genDailySummaryBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = days
+      .map(
+        (day) => `
+        <tr>
+            <td>${day.bsDate}</td>
+            <td>${day.bsDate}</td>
+            <td><strong>${day.computed.u1Energy.toFixed(1)}</strong></td>
+            <td><strong>${day.computed.u2Energy.toFixed(1)}</strong></td>
+            <td><strong style="color:#00e5c8">${day.computed.totalEnergy.toFixed(1)}</strong></td>
+            <td>${day.computed.u1AvgMW.toFixed(2)}</td>
+            <td>${day.computed.u2AvgMW.toFixed(2)}</td>
+            <td>${day.computed.maxMW.toFixed(2)}</td>
+            <td>${day.computed.opHours}</td>
+            <td>${day.computed.shutdownHrs}</td>
+            <td>${day.computed.avgPF.toFixed(3)}</td>
+            <td>${day.computed.avgHz.toFixed(2)}</td>
+        </tr>
+    `,
+      )
+      .join("");
+  }
+
+  // Auto-sync when page loads
+  document.addEventListener("DOMContentLoaded", function () {
+    // Check if generation page is active and sync
+    setTimeout(function () {
+      if (
+        document.getElementById("page-generation")?.classList.contains("active")
+      ) {
+        if (
+          typeof GenDB !== "undefined" &&
+          (!GenDB.allDays || GenDB.allDays.length === 0)
+        ) {
+          fetchGenerationFromSheet();
+        }
+      }
+    }, 1000);
+  });
 });
