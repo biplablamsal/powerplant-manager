@@ -90,7 +90,14 @@
       <nav class="sidebar-nav">
         <div class="nav-section">
           <div class="nav-label">Overview</div>
-          <a class="nav-item active" onclick="showPage('dashboard', this)">
+          <a
+            class="nav-item active"
+            href="#"
+            onclick="
+              showPage('dashboard', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
             <span class="nav-text">Dashboard</span>
@@ -98,12 +105,26 @@
         </div>
         <div class="nav-section">
           <div class="nav-label">Operations</div>
-          <a class="nav-item" onclick="showPage('operations', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('operations', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-bolt"></i></span>
             <span class="nav-text">Operations</span>
           </a>
-          <a class="nav-item" onclick="showPage('generation', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('generation', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-chart-area"></i></span>
             <span class="nav-text">Generation Log</span>
@@ -111,13 +132,27 @@
         </div>
         <div class="nav-section">
           <div class="nav-label">Maintenance</div>
-          <a class="nav-item" onclick="showPage('maintenance', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('maintenance', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-tools"></i></span>
             <span class="nav-text">Maintenance</span>
             <span class="nav-badge">3</span>
           </a>
-          <a class="nav-item" onclick="showPage('workorders', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('workorders', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
             <span class="nav-text">Work Orders</span>
@@ -125,12 +160,26 @@
         </div>
         <div class="nav-section">
           <div class="nav-label">Assets</div>
-          <a class="nav-item" onclick="showPage('equipment', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('equipment', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-cogs"></i></span>
             <span class="nav-text">Equipment</span>
           </a>
-          <a class="nav-item" onclick="showPage('faults', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('faults', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"
               ><i class="fas fa-exclamation-triangle"></i
@@ -141,7 +190,14 @@
         </div>
         <div class="nav-section">
           <div class="nav-label">Store</div>
-          <a class="nav-item" onclick="showPage('inventory', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('inventory', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-boxes"></i></span>
             <span class="nav-text">Inventory</span>
@@ -150,7 +206,14 @@
         <!-- NEW: Instagram-style Feed Menu Item -->
         <div class="nav-section">
           <div class="nav-label">Social</div>
-          <a class="nav-item" onclick="showPage('feed', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('feed', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fab fa-instagram"></i></span>
             <span class="nav-text">Maintenance Feed</span>
@@ -158,17 +221,38 @@
         </div>
         <div class="nav-section">
           <div class="nav-label">System</div>
-          <a class="nav-item" onclick="showPage('documents', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('documents', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-folder-open"></i></span>
             <span class="nav-text">Documents</span>
           </a>
-          <a class="nav-item" onclick="showPage('reports', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('reports', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
             <span class="nav-text">Reports</span>
           </a>
-          <a class="nav-item" onclick="showPage('users', this)">
+          <a
+            class="nav-item"
+            href="#"
+            onclick="
+              showPage('users', this);
+              return false;
+            "
+          >
             <span class="active-indicator"></span>
             <span class="nav-icon"><i class="fas fa-users-cog"></i></span>
             <span class="nav-text">User Management</span>
@@ -928,6 +1012,135 @@
         </div>
         <div id="genDashboardContent" style="display: none">
           <!-- generation content -->
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-operations">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Operations</div>
+            <div class="page-subtitle">
+              View operating performance and control panels.
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Operations page content will be shown here once configured.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-workorders">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Work Orders</div>
+            <div class="page-subtitle">
+              Track open work orders and assignments.
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">New Work Order</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Work order details will appear here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-equipment">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Equipment</div>
+            <div class="page-subtitle">Asset registry and status overview.</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">Add Equipment</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Equipment asset list will be shown here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-faults">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Faults & Incidents</div>
+            <div class="page-subtitle">
+              Review fault logs and incident reports.
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">New Fault</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Faults and incident logs will be shown here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-inventory">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Inventory</div>
+            <div class="page-subtitle">
+              Manage spare parts and stock levels.
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">Update Stock</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Inventory records will be shown here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-documents">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Documents</div>
+            <div class="page-subtitle">
+              View plant documentation and manuals.
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">Upload</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Document repository will be shown here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content page" id="page-reports">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Reports</div>
+            <div class="page-subtitle">View and export system reports.</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm">Generate</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>Reports will be shown here.</p>
+          </div>
         </div>
       </div>
     </div>
