@@ -2,15 +2,14 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <!-- Replace the existing viewport meta tag with this -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
-    <style>
-  `
-    </style>
-    <title>HydroPlant Manager — Operations & Maintenance</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"
+    />
+    <title>HydroPlant Manager — Maintenance Feed (Instagram Style)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -21,82 +20,65 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <style>
-        /* Additional mobile fixes */
-        @media (max-width: 768px) {
-            /* Ensure no horizontal overflow */
-            body {
-            overflow-x: hidden;
-            position: relative;
-            }
-            
-            .main-wrap {
-            overflow-x: hidden;
-            }
-            
-            /* Fix sidebar overlay */
-            .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-            }
-            
-            .sidebar-overlay.active {
-            display: block;
-            }
-            
-            /* Disable body scroll when sidebar open */
-            body.sidebar-open {
-            overflow: hidden;
-            }
-            
-            /* Smaller sidebar fonts */
-            .sidebar .nav-item {
-            font-size: 12px !important;
-            padding: 8px 12px !important;
-            }
-            
-            .sidebar .nav-text {
-            font-size: 12px !important;
-            }
-            
-            .sidebar .nav-label {
-            font-size: 8px !important;
-            }
-            
-            .sidebar .user-name {
-            font-size: 11px !important;
-            }
-            
-            .sidebar .logo-text .name {
-            font-size: 13px !important;
-            }
-            
-            /* Make tables more readable */
-            .data-table td, 
-            .faults-table td, 
-            .gen-table td,
-            .maint-table td {
-            padding: 8px 10px;
-            font-size: 11px;
-            }
-            
-            .data-table th,
-            .faults-table th,
-            .gen-table th,
-            .maint-table th {
-            padding: 8px 10px;
-            font-size: 10px;
-            }
+      @media (max-width: 768px) {
+        body {
+          overflow-x: hidden;
+          position: relative;
         }
-        </style>
+        .main-wrap {
+          overflow-x: hidden;
+        }
+        .sidebar-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+          display: none;
+        }
+        .sidebar-overlay.active {
+          display: block;
+        }
+        body.sidebar-open {
+          overflow: hidden;
+        }
+        .sidebar .nav-item {
+          font-size: 12px !important;
+          padding: 8px 12px !important;
+        }
+        .sidebar .nav-text {
+          font-size: 12px !important;
+        }
+        .sidebar .nav-label {
+          font-size: 8px !important;
+        }
+        .sidebar .user-name {
+          font-size: 11px !important;
+        }
+        .sidebar .logo-text .name {
+          font-size: 13px !important;
+        }
+        .data-table td,
+        .faults-table td,
+        .gen-table td,
+        .maint-table td {
+          padding: 8px 10px;
+          font-size: 11px;
+        }
+        .data-table th,
+        .faults-table th,
+        .gen-table th,
+        .maint-table th {
+          padding: 8px 10px;
+          font-size: 10px;
+        }
+      }
+    </style>
   </head>
   <body>
-    <!-- SIDEBAR (same as before - keeping it short here) -->
+    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <div class="logo-icon"><i class="fas fa-water"></i></div>
@@ -108,79 +90,89 @@
       <nav class="sidebar-nav">
         <div class="nav-section">
           <div class="nav-label">Overview</div>
-          <a class="nav-item active" onclick="showPage('dashboard', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span
-            ><span class="nav-text">Dashboard</span></a
-          >
+          <a class="nav-item active" onclick="showPage('dashboard', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
+            <span class="nav-text">Dashboard</span>
+          </a>
         </div>
         <div class="nav-section">
           <div class="nav-label">Operations</div>
-          <a class="nav-item" onclick="showPage('operations', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-bolt"></i></span
-            ><span class="nav-text">Operations</span></a
-          >
-          <a class="nav-item" onclick="showPage('generation', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-chart-area"></i></span
-            ><span class="nav-text">Generation Log</span></a
-          >
+          <a class="nav-item" onclick="showPage('operations', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-bolt"></i></span>
+            <span class="nav-text">Operations</span>
+          </a>
+          <a class="nav-item" onclick="showPage('generation', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-chart-area"></i></span>
+            <span class="nav-text">Generation Log</span>
+          </a>
         </div>
         <div class="nav-section">
           <div class="nav-label">Maintenance</div>
-          <a class="nav-item" onclick="showPage('maintenance', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-tools"></i></span
-            ><span class="nav-text">Maintenance</span
-            ><span class="nav-badge">3</span></a
-          >
-          <a class="nav-item" onclick="showPage('workorders', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-clipboard-list"></i></span
-            ><span class="nav-text">Work Orders</span></a
-          >
+          <a class="nav-item" onclick="showPage('maintenance', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-tools"></i></span>
+            <span class="nav-text">Maintenance</span>
+            <span class="nav-badge">3</span>
+          </a>
+          <a class="nav-item" onclick="showPage('workorders', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
+            <span class="nav-text">Work Orders</span>
+          </a>
         </div>
         <div class="nav-section">
           <div class="nav-label">Assets</div>
-          <a class="nav-item" onclick="showPage('equipment', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-cogs"></i></span
-            ><span class="nav-text">Equipment</span></a
-          >
-          <a class="nav-item" onclick="showPage('faults', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"
-              ><i class="fas fa-exclamation-triangle"></i></span
-            ><span class="nav-text">Faults & Incidents</span
-            ><span class="nav-badge">2</span></a
-          >
+          <a class="nav-item" onclick="showPage('equipment', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-cogs"></i></span>
+            <span class="nav-text">Equipment</span>
+          </a>
+          <a class="nav-item" onclick="showPage('faults', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"
+              ><i class="fas fa-exclamation-triangle"></i
+            ></span>
+            <span class="nav-text">Faults & Incidents</span>
+            <span class="nav-badge">2</span>
+          </a>
         </div>
         <div class="nav-section">
           <div class="nav-label">Store</div>
-          <a class="nav-item" onclick="showPage('inventory', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-boxes"></i></span
-            ><span class="nav-text">Inventory</span></a
-          >
+          <a class="nav-item" onclick="showPage('inventory', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-boxes"></i></span>
+            <span class="nav-text">Inventory</span>
+          </a>
+        </div>
+        <!-- NEW: Instagram-style Feed Menu Item -->
+        <div class="nav-section">
+          <div class="nav-label">Social</div>
+          <a class="nav-item" onclick="showPage('feed', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fab fa-instagram"></i></span>
+            <span class="nav-text">Maintenance Feed</span>
+          </a>
         </div>
         <div class="nav-section">
           <div class="nav-label">System</div>
-          <a class="nav-item" onclick="showPage('documents', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-folder-open"></i></span
-            ><span class="nav-text">Documents</span></a
-          >
-          <a class="nav-item" onclick="showPage('reports', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-file-alt"></i></span
-            ><span class="nav-text">Reports</span></a
-          >
-          <a class="nav-item" onclick="showPage('users', this)"
-            ><span class="active-indicator"></span
-            ><span class="nav-icon"><i class="fas fa-users-cog"></i></span
-            ><span class="nav-text">User Management</span></a
-          >
+          <a class="nav-item" onclick="showPage('documents', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-folder-open"></i></span>
+            <span class="nav-text">Documents</span>
+          </a>
+          <a class="nav-item" onclick="showPage('reports', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
+            <span class="nav-text">Reports</span>
+          </a>
+          <a class="nav-item" onclick="showPage('users', this)">
+            <span class="active-indicator"></span>
+            <span class="nav-icon"><i class="fas fa-users-cog"></i></span>
+            <span class="nav-text">User Management</span>
+          </a>
         </div>
       </nav>
       <div class="sidebar-footer">
@@ -205,13 +197,13 @@
           <i class="fas fa-bars"></i>
         </div>
         <div class="topbar-breadcrumb">
-          <span>HydroPlant</span
-          ><i class="fas fa-chevron-right" style="font-size: 9px"></i
-          ><span class="current" id="breadcrumb">Dashboard</span>
+          <span>HydroPlant</span>
+          <i class="fas fa-chevron-right" style="font-size: 9px"></i>
+          <span class="current" id="breadcrumb">Dashboard</span>
         </div>
         <div class="topbar-search">
-          <i class="fas fa-search"></i
-          ><input
+          <i class="fas fa-search"></i>
+          <input
             type="text"
             placeholder="Search equipment, faults, work orders..."
           />
@@ -278,7 +270,7 @@
         </div>
       </header>
 
-      <!-- PAGE: DASHBOARD (simplified for brevity - but complete in your original) -->
+      <!-- PAGE: DASHBOARD -->
       <div class="page-content page active" id="page-dashboard">
         <div class="page-header">
           <div>
@@ -290,8 +282,9 @@
           </div>
           <div class="page-actions">
             <button class="btn btn-secondary btn-sm">
-              <i class="fas fa-download"></i> Export</button
-            ><button class="btn btn-primary btn-sm">
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-primary btn-sm">
               <i class="fas fa-plus"></i> Log Entry
             </button>
           </div>
@@ -377,9 +370,9 @@
                 >24-Hour Generation Trend
               </div>
               <div class="flex gap-8">
-                <button class="btn btn-secondary btn-sm">Daily</button
-                ><button class="btn btn-secondary btn-sm">Weekly</button
-                ><button class="btn btn-secondary btn-sm">Monthly</button>
+                <button class="btn btn-secondary btn-sm">Daily</button>
+                <button class="btn btn-secondary btn-sm">Weekly</button>
+                <button class="btn btn-secondary btn-sm">Monthly</button>
               </div>
             </div>
             <div class="card-body">
@@ -458,7 +451,368 @@
         </div>
       </div>
 
-      <!-- PAGE: USERS (complete user table) -->
+      <!-- PAGE: MAINTENANCE FEED (Instagram Style - Standalone) -->
+      <div class="page-content page" id="page-feed">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <i class="fab fa-instagram" style="margin-right: 8px"></i>
+              Maintenance Feed
+            </div>
+            <div class="page-subtitle">
+              Real-time updates from the team · Latest first · Instagram style
+            </div>
+          </div>
+          <div class="page-actions">
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="toggleInlinePostForm()"
+            >
+              <i class="fas fa-plus-circle"></i> New Post
+            </button>
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="generateFeedReport()"
+            >
+              <i class="fas fa-file-alt"></i> Report
+            </button>
+          </div>
+        </div>
+
+        <!-- New Post Form (hidden by default) -->
+        <div class="inline-post-form" id="inlinePostForm" style="display: none">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fas fa-edit"></i> Create New Post
+              </div>
+              <button class="btn-icon" onclick="toggleInlinePostForm()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="post-type-selector">
+                <button class="post-type-btn active" data-type="update">
+                  🔧 Task Update
+                </button>
+                <button class="post-type-btn" data-type="issue">
+                  ⚠️ Issue
+                </button>
+                <button class="post-type-btn" data-type="complete">
+                  ✅ Complete
+                </button>
+                <button class="post-type-btn" data-type="inspection">
+                  🔍 Inspection
+                </button>
+              </div>
+              <div class="form-group">
+                <input
+                  type="text"
+                  id="inlinePostTitle"
+                  placeholder="Title"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <textarea
+                  id="inlinePostDesc"
+                  rows="3"
+                  placeholder="What's happening? (required)"
+                  class="form-control"
+                ></textarea>
+              </div>
+              <div class="form-row">
+                <select id="inlinePostEquipment" class="form-control">
+                  <option value="">Select Equipment</option>
+                  <option value="Unit 1 Generator">Unit 1 Generator</option>
+                  <option value="Unit 2 Generator">Unit 2 Generator</option>
+                  <option value="Unit 3 Generator">Unit 3 Generator</option>
+                  <option value="Main Transformer T1">
+                    Main Transformer T1
+                  </option>
+                  <option value="Governor System">Governor System</option>
+                </select>
+                <input
+                  type="text"
+                  id="inlinePostWorkOrder"
+                  placeholder="Work Order #"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <input
+                  type="text"
+                  id="inlinePostTags"
+                  placeholder="Tags (comma: bearing, urgent)"
+                  class="form-control"
+                />
+              </div>
+              <!-- Photo Upload -->
+              <div class="form-group">
+                <label
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    margin-bottom: 8px;
+                    display: block;
+                  "
+                  ><i class="fas fa-camera"></i> Add Photos (up to 5)</label
+                >
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <button
+                    type="button"
+                    class="btn-secondary btn-sm"
+                    id="feedTakePhotoBtn"
+                  >
+                    <i class="fas fa-camera"></i> Take Photo
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-secondary btn-sm"
+                    id="feedChoosePhotoBtn"
+                  >
+                    <i class="fas fa-images"></i> Choose from Gallery
+                  </button>
+                </div>
+                <input
+                  type="file"
+                  id="feedCameraInput"
+                  accept="image/*"
+                  capture="environment"
+                  style="display: none"
+                />
+                <input
+                  type="file"
+                  id="feedGalleryInput"
+                  accept="image/*"
+                  multiple
+                  style="display: none"
+                />
+                <div
+                  class="feed-photo-preview"
+                  id="feedPhotoPreview"
+                  style="display: flex; flex-wrap: wrap; gap: 10px"
+                ></div>
+              </div>
+              <div
+                class="new-post-actions"
+                style="
+                  display: flex;
+                  gap: 12px;
+                  justify-content: flex-end;
+                  margin-top: 8px;
+                "
+              >
+                <button
+                  class="btn btn-secondary"
+                  onclick="toggleInlinePostForm()"
+                >
+                  Cancel
+                </button>
+                <button class="btn btn-primary" onclick="submitInlinePost()">
+                  <i class="fas fa-paper-plane"></i> Post
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feed Posts Container - Instagram style -->
+        <div class="feed-posts-container" id="feedPostsContainer">
+          <div
+            class="feed-loading"
+            id="feedLoading"
+            style="display: none; text-align: center; padding: 40px"
+          >
+            <i class="fas fa-spinner fa-spin"></i> Loading feed...
+          </div>
+          <div class="feed-posts" id="feedPosts"></div>
+        </div>
+      </div>
+
+      <!-- PAGE: MAINTENANCE (Feed tab REMOVED) -->
+      <div class="page-content page" id="page-maintenance">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Maintenance Dashboard</div>
+            <div class="page-subtitle">
+              Preventive Maintenance · Asset Health Tracking
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm" id="maintUploadBtn">
+              <i class="fas fa-cloud-upload-alt"></i> Import Excel
+            </button>
+            <button class="btn btn-secondary btn-sm" id="maintExportBtn">
+              <i class="fas fa-download"></i> Export Report
+            </button>
+            <input
+              type="file"
+              id="maintFileInput"
+              accept=".xlsx,.xls,.csv"
+              style="display: none"
+            />
+          </div>
+        </div>
+        <!-- Tabs - FEED TAB REMOVED -->
+        <div class="maint-tabs">
+          <button class="maint-tab active" data-tab="schedule">
+            <i class="fas fa-list-check"></i> PM Schedule
+          </button>
+          <button class="maint-tab" data-tab="health">
+            <i class="fas fa-heartbeat"></i> Asset Health
+          </button>
+          <button class="maint-tab" data-tab="history">
+            <i class="fas fa-history"></i> History
+          </button>
+          <button class="maint-tab" data-tab="analytics">
+            <i class="fas fa-chart-pie"></i> Analytics
+          </button>
+        </div>
+        <!-- Tab Contents (PM Schedule, Asset Health, History, Analytics - same as before) -->
+        <div class="maint-tab-content active" id="tabSchedule">
+          <div class="two-col">
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title">
+                  <i class="fas fa-clipboard-list"></i> Preventive Maintenance
+                  Schedule
+                </div>
+                <button class="btn-icon" onclick="addMaintenanceTask()">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="maint-card-body">
+                <div class="pm-task-list" id="pmTaskList"></div>
+              </div>
+            </div>
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title">
+                  <i class="fas fa-calendar-alt"></i> Due Calendar
+                </div>
+                <div class="calendar-nav">
+                  <button class="btn-icon-sm" id="prevWeek">
+                    <i class="fas fa-chevron-left"></i></button
+                  ><span id="calendarWeekLabel">This Week</span
+                  ><button class="btn-icon-sm" id="nextWeek">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="maint-card-body">
+                <div class="calendar-grid" id="calendarGrid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="maint-tab-content" id="tabHealth">
+          <div class="two-col">
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title">
+                  <i class="fas fa-microchip"></i> Asset Health Score
+                </div>
+              </div>
+              <div class="maint-card-body">
+                <div class="asset-health-list" id="assetHealthList"></div>
+              </div>
+            </div>
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title">
+                  <i class="fas fa-chart-simple"></i> Health Trend
+                </div>
+              </div>
+              <div class="maint-card-body">
+                <canvas id="healthTrendChart" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="maint-tab-content" id="tabHistory">
+          <div class="maint-card">
+            <div class="maint-card-header">
+              <div class="maint-card-title">
+                <i class="fas fa-database"></i> Maintenance History Log
+              </div>
+              <div class="filter-group">
+                <select id="historyFilterAsset" class="filter-select">
+                  <option value="all">All Assets</option>
+                  <option value="Unit 1">Unit 1</option>
+                  <option value="Unit 2">Unit 2</option>
+                  <option value="Transformer">Transformer</option>
+                </select>
+              </div>
+            </div>
+            <div class="maint-card-body">
+              <div class="table-wrapper">
+                <table class="maint-table" id="historyTable">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Asset</th>
+                      <th>Work Order</th>
+                      <th>Task</th>
+                      <th>Duration</th>
+                      <th>Downtime</th>
+                      <th>Technician</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="maint-tab-content" id="tabAnalytics">
+          <div class="two-col">
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title">Downtime by Cause</div>
+              </div>
+              <div class="maint-card-body">
+                <canvas id="downtimeChart" height="220"></canvas>
+              </div>
+            </div>
+            <div class="maint-card">
+              <div class="maint-card-header">
+                <div class="maint-card-title">MTBF Trend</div>
+              </div>
+              <div class="maint-card-body">
+                <canvas id="mtbfTrendChart" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="maint-card">
+            <div class="maint-card-header">
+              <div class="maint-card-title">Maintenance Cost Analysis</div>
+            </div>
+            <div class="maint-card-body">
+              <canvas id="costChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="maint-files-card" id="maintFilesCard" style="display: none">
+          <div class="maint-card-header">
+            <div class="maint-card-title">
+              <i class="fas fa-file-excel"></i> Imported Data
+            </div>
+            <button class="btn-clear" id="clearMaintData">Clear All</button>
+          </div>
+          <div class="maint-card-body" id="maintFileList"></div>
+        </div>
+      </div>
+
+      <!-- PAGE: USERS, GENERATION, etc. (keep your existing pages) -->
       <div class="page-content page" id="page-users">
         <div class="page-header">
           <div>
@@ -516,534 +870,68 @@
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-8">
-                      <div
-                        class="user-avatar"
-                        style="
-                          width: 28px;
-                          height: 28px;
-                          font-size: 10px;
-                          background: linear-gradient(135deg, #854f0b, #ef9f27);
-                        "
-                      >
-                        PT
-                      </div>
-                      <span class="bold">Prakash Thapa</span>
-                    </div>
-                  </td>
-                  <td>p.thapa@hydroplant.np</td>
-                  <td><span class="badge badge-amber">Engineer</span></td>
-                  <td>A</td>
-                  <td>Today 06:10</td>
-                  <td><span class="badge badge-green">Active</span></td>
-                  <td>
-                    <div class="flex gap-8">
-                      <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-edit"></i></button
-                      ><button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-lock"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-8">
-                      <div
-                        class="user-avatar"
-                        style="
-                          width: 28px;
-                          height: 28px;
-                          font-size: 10px;
-                          background: linear-gradient(135deg, #0f6e56, #29c48f);
-                        "
-                      >
-                        SG
-                      </div>
-                      <span class="bold">Suresh Gurung</span>
-                    </div>
-                  </td>
-                  <td>s.gurung@hydroplant.np</td>
-                  <td><span class="badge badge-green">Operator</span></td>
-                  <td>C</td>
-                  <td>Yesterday 22:05</td>
-                  <td><span class="badge badge-green">Active</span></td>
-                  <td>
-                    <div class="flex gap-8">
-                      <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-edit"></i></button
-                      ><button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-lock"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-8">
-                      <div
-                        class="user-avatar"
-                        style="
-                          width: 28px;
-                          height: 28px;
-                          font-size: 10px;
-                          background: linear-gradient(135deg, #3b6d11, #639922);
-                        "
-                      >
-                        AA
-                      </div>
-                      <span class="bold">Anil Adhikari</span>
-                    </div>
-                  </td>
-                  <td>a.adhikari@hydroplant.np</td>
-                  <td><span class="badge badge-green">Operator</span></td>
-                  <td>B</td>
-                  <td>Yesterday 14:00</td>
-                  <td><span class="badge badge-green">Active</span></td>
-                  <td>
-                    <div class="flex gap-8">
-                      <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-edit"></i></button
-                      ><button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-lock"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-8">
-                      <div
-                        class="user-avatar"
-                        style="
-                          width: 28px;
-                          height: 28px;
-                          font-size: 10px;
-                          background: linear-gradient(135deg, #533689, #9f7aea);
-                        "
-                      >
-                        DL
-                      </div>
-                      <span class="bold">Dinesh Limbu</span>
-                    </div>
-                  </td>
-                  <td>d.limbu@hydroplant.np</td>
-                  <td>
-                    <span
-                      class="badge"
-                      style="
-                        color: #9f7aea;
-                        background: rgba(159, 122, 234, 0.1);
-                      "
-                      >Store Keeper</span
-                    >
-                  </td>
-                  <td>—</td>
-                  <td>Today 08:30</td>
-                  <td><span class="badge badge-green">Active</span></td>
-                  <td>
-                    <div class="flex gap-8">
-                      <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-edit"></i></button
-                      ><button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-lock"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-8">
-                      <div
-                        class="user-avatar"
-                        style="
-                          width: 28px;
-                          height: 28px;
-                          font-size: 10px;
-                          background: linear-gradient(135deg, #185fa5, #4a9de8);
-                        "
-                      >
-                        AD
-                      </div>
-                      <span class="bold">Admin System</span>
-                    </div>
-                  </td>
-                  <td>admin@hydroplant.np</td>
-                  <td><span class="badge badge-red">Admin</span></td>
-                  <td>—</td>
-                  <td>2024-01-14 17:30</td>
-                  <td><span class="badge badge-green">Active</span></td>
-                  <td>
-                    <div class="flex gap-8">
-                      <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-edit"></i></button
-                      ><button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-lock"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
-            <!-- PAGE: MAINTENANCE (Enhanced Dashboard) -->
-      <!-- PAGE: MAINTENANCE (with embedded Feed tab) -->
-<div class="page-content page" id="page-maintenance">
-    <div class="page-header">
-        <div>
-            <div class="page-title">Maintenance Dashboard</div>
-            <div class="page-subtitle">
-                Preventive Maintenance · Asset Health Tracking · Real-time Feed
-            </div>
-        </div>
-        <div class="page-actions">
-            <button class="btn btn-primary btn-sm" id="maintUploadBtn">
-                <i class="fas fa-cloud-upload-alt"></i> Import Excel
-            </button>
-            <button class="btn btn-secondary btn-sm" id="maintExportBtn">
-                <i class="fas fa-download"></i> Export Report
-            </button>
-            <input type="file" id="maintFileInput" accept=".xlsx,.xls,.csv" style="display:none">
-        </div>
-    </div>
 
-    <!-- Tabs including new FEED tab -->
-    <div class="maint-tabs">
-        <button class="maint-tab" data-tab="schedule"><i class="fas fa-list-check"></i> PM Schedule</button>
-        <button class="maint-tab" data-tab="health"><i class="fas fa-heartbeat"></i> Asset Health</button>
-        <button class="maint-tab" data-tab="history"><i class="fas fa-history"></i> History</button>
-        <button class="maint-tab" data-tab="analytics"><i class="fas fa-chart-pie"></i> Analytics</button>
-        <button class="maint-tab active" data-tab="feed"><i class="fas fa-newspaper"></i> Feed</button>
-    </div>
-
-    <!-- Tab Content: Feed -->
-    <div class="maint-tab-content active" id="tabFeed">
-        <!-- New Post Button -->
-        <div class="feed-header-actions" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-        <button class="btn btn-teal" id="inlineNewPostBtn" onclick="toggleInlinePostForm()">
-            <i class="fas fa-plus-circle"></i> Create New Post
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="generateFeedReport()">
-            <i class="fas fa-file-alt"></i> Generate Report
-        </button>
-    </div>
-
-        <!-- Inline New Post Form (hidden by default) -->
-        <div class="inline-post-form" id="inlinePostForm" style="display:none;">
-            <div class="card" style="margin-bottom: 20px;">
-                <div class="card-header">
-                    <div class="card-title"><i class="fas fa-edit"></i> Share Maintenance Update</div>
-                </div>
-                <div class="card-body">
-                    <div class="post-type-selector">
-                        <button class="post-type-btn active" data-type="update">🔧 Task Update</button>
-                        <button class="post-type-btn" data-type="issue">⚠️ Issue Report</button>
-                        <button class="post-type-btn" data-type="complete">✅ Completion</button>
-                        <button class="post-type-btn" data-type="inspection">🔍 Inspection</button>
-                    </div>
-
-                    <div class="form-group" style="margin-top: 12px;">
-                        <input type="text" id="inlinePostTitle" placeholder="Title (e.g., Unit 2 Bearing Replacement)" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                        <textarea id="inlinePostDesc" rows="3" placeholder="What did you do? Describe the task..." class="form-control"></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <select id="inlinePostEquipment" class="form-control">
-                            <option value="">Select Equipment</option>
-                            <option value="Unit 1 Generator">Unit 1 Generator</option>
-                            <option value="Unit 2 Generator">Unit 2 Generator</option>
-                            <option value="Unit 3 Generator">Unit 3 Generator</option>
-                            <option value="Main Transformer T1">Main Transformer T1</option>
-                            <option value="Governor System">Governor System</option>
-                            <option value="Cooling Water Pump">Cooling Water Pump</option>
-                        </select>
-                        <input type="text" id="inlinePostWorkOrder" placeholder="Work Order #" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                        <input type="text" id="inlinePostTags" placeholder="Tags (comma separated: bearing, urgent)" class="form-control">
-                    </div>
-
-                    <!-- PHOTO UPLOAD SECTION -->
-                    <div class="form-group">
-                        <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block;">
-                            <i class="fas fa-camera"></i> Attach Photos (up to 5)
-                        </label>
-                        <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
-                            <button type="button" class="btn-secondary btn-sm" id="feedTakePhotoBtn">
-                                <i class="fas fa-camera"></i> Take Photo
-                            </button>
-                            <button type="button" class="btn-secondary btn-sm" id="feedChoosePhotoBtn">
-                                <i class="fas fa-images"></i> Choose from Gallery
-                            </button>
-                        </div>
-                        <input type="file" id="feedCameraInput" accept="image/*" capture="environment" style="display:none">
-                        <input type="file" id="feedGalleryInput" accept="image/*" multiple style="display:none">
-                        <div class="feed-photo-preview" id="feedPhotoPreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
-                    </div>
-
-                    <div class="new-post-actions" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;">
-                        <button class="btn btn-secondary" onclick="toggleInlinePostForm()">Cancel</button>
-                        <button class="btn btn-primary" onclick="submitInlinePost()">
-                            <i class="fas fa-paper-plane"></i> Post
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Feed Posts Container -->
-        <div class="feed-posts-container" id="feedPostsContainer" style="max-height: 60vh; overflow-y: auto;">
-            <div class="feed-loading" id="feedLoading" style="display:none; text-align: center; padding: 40px;">
-                <i class="fas fa-spinner fa-spin"></i> Loading feed...
-            </div>
-            <div class="feed-posts" id="feedPosts"></div>
-        </div>
-    </div>
-
-    <!-- Tab Content: PM Schedule (existing) -->
-    <div class="maint-tab-content" id="tabSchedule">
-        <div class="two-col">
-            <div class="maint-card">
-                <div class="maint-card-header">
-                    <div class="maint-card-title"><i class="fas fa-clipboard-list"></i> Preventive Maintenance Schedule</div>
-                    <button class="btn-icon" onclick="addMaintenanceTask()"><i class="fas fa-plus"></i></button>
-                </div>
-                <div class="maint-card-body">
-                    <div class="pm-task-list" id="pmTaskList"></div>
-                </div>
-            </div>
-            <div class="maint-card">
-                <div class="maint-card-header">
-                    <div class="maint-card-title"><i class="fas fa-calendar-alt"></i> Due Calendar</div>
-                    <div class="calendar-nav">
-                        <button class="btn-icon-sm" id="prevWeek"><i class="fas fa-chevron-left"></i></button>
-                        <span id="calendarWeekLabel">This Week</span>
-                        <button class="btn-icon-sm" id="nextWeek"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                </div>
-                <div class="maint-card-body">
-                    <div class="calendar-grid" id="calendarGrid"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Content: Asset Health -->
-    <div class="maint-tab-content" id="tabHealth">
-        <div class="two-col">
-            <div class="maint-card">
-                <div class="maint-card-header">
-                    <div class="maint-card-title"><i class="fas fa-microchip"></i> Asset Health Score</div>
-                </div>
-                <div class="maint-card-body">
-                    <div class="asset-health-list" id="assetHealthList"></div>
-                </div>
-            </div>
-            <div class="maint-card">
-                <div class="maint-card-header">
-                    <div class="maint-card-title"><i class="fas fa-chart-simple"></i> Health Trend</div>
-                </div>
-                <div class="maint-card-body">
-                    <canvas id="healthTrendChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Content: History -->
-    <div class="maint-tab-content" id="tabHistory">
-        <div class="maint-card">
-            <div class="maint-card-header">
-                <div class="maint-card-title"><i class="fas fa-database"></i> Maintenance History Log</div>
-                <div class="filter-group">
-                    <select id="historyFilterAsset" class="filter-select">
-                        <option value="all">All Assets</option>
-                        <option value="Unit 1">Unit 1</option>
-                        <option value="Unit 2">Unit 2</option>
-                        <option value="Transformer">Transformer</option>
-                    </select>
-                </div>
-            </div>
-            <div class="maint-card-body">
-                <div class="table-wrapper">
-                    <table class="maint-table" id="historyTable">
-                        <thead>
-                            <tr><th>Date</th><th>Asset</th><th>Work Order</th><th>Task</th><th>Duration</th><th>Downtime</th><th>Technician</th><th>Status</th></tr>
-                        </thead>
-                        <tbody id="historyTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Content: Analytics -->
-    <div class="maint-tab-content" id="tabAnalytics">
-        <div class="two-col">
-            <div class="maint-card">
-                <div class="maint-card-header">
-                    <div class="maint-card-title">Downtime by Cause</div>
-                </div>
-                <div class="maint-card-body">
-                    <canvas id="downtimeChart" height="220"></canvas>
-                </div>
-            </div>
-            <div class="maint-card">
-                <div class="maint-card-header">
-                    <div class="maint-card-title">MTBF Trend</div>
-                </div>
-                <div class="maint-card-body">
-                    <canvas id="mtbfTrendChart" height="220"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="maint-card">
-            <div class="maint-card-header">
-                <div class="maint-card-title">Maintenance Cost Analysis</div>
-            </div>
-            <div class="maint-card-body">
-                <canvas id="costChart" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Uploaded Files Info -->
-    <div class="maint-files-card" id="maintFilesCard" style="display:none">
-        <div class="maint-card-header">
-            <div class="maint-card-title"><i class="fas fa-file-excel"></i> Imported Data</div>
-            <button class="btn-clear" id="clearMaintData">Clear All</button>
-        </div>
-        <div class="maint-card-body" id="maintFileList"></div>
-    </div>
-</div>
-
-<!-- PAGE: GENERATION LOG -->
-<div class="page-content page" id="page-generation">
-    <div class="page-header">
-        <div>
+      <div class="page-content page" id="page-generation">
+        <div class="page-header">
+          <div>
             <div class="page-title">Generation Log</div>
             <div class="page-subtitle">
-                Hourly Generation Data · Unit Performance · Google Sheets Sync
+              Hourly Generation Data · Unit Performance · Google Sheets Sync
             </div>
-        </div>
-        <div class="page-actions">
+          </div>
+          <div class="page-actions">
             <button class="btn btn-secondary btn-sm" onclick="manualGenSync()">
-                <i class="fas fa-sync-alt"></i> Sync from Sheet
-            </button>
-            <button class="btn btn-primary btn-sm" id="uploadCsvBtn">
-                <i class="fas fa-upload"></i> Import Excel/CSV
-            </button>
-            <input type="file" id="csvFileInput" accept=".xlsx,.xls,.csv" style="display:none">
+              <i class="fas fa-sync-alt"></i> Sync from Sheet</button
+            ><button class="btn btn-primary btn-sm" id="uploadCsvBtn">
+              <i class="fas fa-upload"></i> Import Excel/CSV</button
+            ><input
+              type="file"
+              id="csvFileInput"
+              accept=".xlsx,.xls,.csv"
+              style="display: none"
+            />
+          </div>
         </div>
-    </div>
-
-    <!-- Empty State -->
-    <div class="gen-empty-state" id="genEmptyState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 40px; background: var(--bg-card); border-radius: 16px;">
-        <div class="gen-empty-icon" style="font-size: 64px; opacity: 0.5; margin-bottom: 20px;">
+        <div
+          class="gen-empty-state"
+          id="genEmptyState"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 40px;
+            background: var(--bg-card);
+            border-radius: 16px;
+          "
+        >
+          <div
+            class="gen-empty-icon"
+            style="font-size: 64px; opacity: 0.5; margin-bottom: 20px"
+          >
             <i class="fas fa-chart-line"></i>
-        </div>
-        <h3 class="gen-empty-title">No Generation Data Yet</h3>
-        <p class="gen-empty-desc">Click "Sync from Sheet" to load data from Google Sheets,<br>or upload an Excel/CSV file with your generation logs.</p>
-        <button class="btn btn-primary" onclick="manualGenSync()">
+          </div>
+          <h3 class="gen-empty-title">No Generation Data Yet</h3>
+          <p class="gen-empty-desc">
+            Click "Sync from Sheet" to load data from Google Sheets,<br />or
+            upload an Excel/CSV file with your generation logs.
+          </p>
+          <button class="btn btn-primary" onclick="manualGenSync()">
             <i class="fas fa-cloud-download-alt"></i> Sync from Google Sheet
-        </button>
+          </button>
+        </div>
+        <div id="genDashboardContent" style="display: none">
+          <!-- generation content -->
+        </div>
+      </div>
     </div>
 
-    <!-- Dashboard Content (hidden initially) -->
-    <div id="genDashboardContent" style="display: none;">
-        <!-- Stats Bar -->
-        <div class="gen-stats-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <div>
-                <div class="gen-stats-title" id="genDashTitle">Generation Summary</div>
-                <div class="gen-stats-subtitle" id="genDashSubtitle">Set Nadi Hydroelectric Project</div>
-            </div>
-            <div class="gen-unit-badges">
-                <div class="gen-unit-badge on"><span class="gen-led"></span> Unit 1</div>
-                <div class="gen-unit-badge on"><span class="gen-led"></span> Unit 2</div>
-            </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="gen-quick-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
-            <div class="gen-stat-card" style="background: var(--bg-card); border-radius: 12px; padding: 16px; text-align: center;">
-                <div style="font-size: 28px; font-weight: 700;" id="qsDays">0</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Total Days</div>
-            </div>
-            <div class="gen-stat-card" style="background: var(--bg-card); border-radius: 12px; padding: 16px; text-align: center;">
-                <div style="font-size: 28px; font-weight: 700;" id="qsHours">0</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Operating Hours</div>
-            </div>
-            <div class="gen-stat-card" style="background: var(--bg-card); border-radius: 12px; padding: 16px; text-align: center;">
-                <div style="font-size: 28px; font-weight: 700;" id="qsShutdown">0</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Shutdown Hours</div>
-            </div>
-            <div class="gen-stat-card" style="background: var(--bg-card); border-radius: 12px; padding: 16px; text-align: center;">
-                <div style="font-size: 28px; font-weight: 700;" id="qsPF">0.00</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Avg Power Factor</div>
-            </div>
-        </div>
-
-        <!-- KPI Row -->
-        <div class="gen-kpi-row" id="genKpiRow" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;"></div>
-
-        <!-- Charts -->
-        <div class="gen-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
-            <div class="gen-chart-card" style="background: var(--bg-card); border-radius: 16px; overflow: hidden;">
-                <div class="gen-chart-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
-                    <div class="gen-chart-title">📊 Generation Trend (MWh)</div>
-                </div>
-                <div class="gen-chart-body" style="padding: 20px;">
-                    <canvas id="genTrendChart" height="200"></canvas>
-                </div>
-            </div>
-            <div class="gen-chart-card" style="background: var(--bg-card); border-radius: 16px; overflow: hidden;">
-                <div class="gen-chart-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
-                    <div class="gen-chart-title">⚡ Unit Comparison</div>
-                </div>
-                <div class="gen-chart-body" style="padding: 20px;">
-                    <canvas id="unitCompChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Daily Summary Table -->
-        <div class="gen-table-card" style="background: var(--bg-card); border-radius: 16px; overflow: hidden;">
-            <div class="gen-table-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <div class="gen-table-title">📋 Daily Generation Summary</div>
-                <div class="gen-badge" id="genTableDaysCount">0 days</div>
-            </div>
-            <div class="gen-table-wrapper" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
-                <table class="gen-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <thead>
-                        <tr style="position: sticky; top: 0; background: var(--bg-card);">
-                            <th>BS Date</th>
-                            <th>AD Date</th>
-                            <th>U1 (MWh)</th>
-                            <th>U2 (MWh)</th>
-                            <th>Total (MWh)</th>
-                            <th>U1 Avg MW</th>
-                            <th>U2 Avg MW</th>
-                            <th>Max MW</th>
-                            <th>Op Hrs</th>
-                            <th>Shutdown</th>
-                            <th>PF</th>
-                            <th>Hz</th>
-                        </tr>
-                    </thead>
-                    <tbody id="genDailySummaryBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
     <script src="script.js"></script>
   </body>
 </html>
