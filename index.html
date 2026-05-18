@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"
     />
-    <title>HydroPlant Manager — Maintenance Feed (Instagram Style)</title>
+    <title>HydroPlant Manager — Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
@@ -19,1128 +19,967 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css" />
-    <style>
-      @media (max-width: 768px) {
-        body {
-          overflow-x: hidden;
-          position: relative;
-        }
-        .main-wrap {
-          overflow-x: hidden;
-        }
-        .sidebar-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 999;
-          display: none;
-        }
-        .sidebar-overlay.active {
-          display: block;
-        }
-        body.sidebar-open {
-          overflow: hidden;
-        }
-        .sidebar .nav-item {
-          font-size: 12px !important;
-          padding: 8px 12px !important;
-        }
-        .sidebar .nav-text {
-          font-size: 12px !important;
-        }
-        .sidebar .nav-label {
-          font-size: 8px !important;
-        }
-        .sidebar .user-name {
-          font-size: 11px !important;
-        }
-        .sidebar .logo-text .name {
-          font-size: 13px !important;
-        }
-        .data-table td,
-        .faults-table td,
-        .gen-table td,
-        .maint-table td {
-          padding: 8px 10px;
-          font-size: 11px;
-        }
-        .data-table th,
-        .faults-table th,
-        .gen-table th,
-        .maint-table th {
-          padding: 8px 10px;
-          font-size: 10px;
-        }
-      }
-    </style>
   </head>
   <body>
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-logo">
-        <div class="logo-icon"><i class="fas fa-water"></i></div>
-        <div class="logo-text">
-          <div class="name">HydroPlant</div>
-          <div class="sub">Manager v2.4</div>
-        </div>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-section">
-          <div class="nav-label">Overview</div>
-          <a
-            class="nav-item active"
-            href="#"
-            onclick="
-              showPage('dashboard', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
-            <span class="nav-text">Dashboard</span>
-          </a>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">Operations</div>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('operations', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-bolt"></i></span>
-            <span class="nav-text">Operations</span>
-          </a>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('generation', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-chart-area"></i></span>
-            <span class="nav-text">Generation Log</span>
-          </a>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">Maintenance</div>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('maintenance', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-tools"></i></span>
-            <span class="nav-text">Maintenance</span>
-            <span class="nav-badge">3</span>
-          </a>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('workorders', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
-            <span class="nav-text">Work Orders</span>
-          </a>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">Assets</div>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('equipment', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-cogs"></i></span>
-            <span class="nav-text">Equipment</span>
-          </a>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('faults', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"
-              ><i class="fas fa-exclamation-triangle"></i
-            ></span>
-            <span class="nav-text">Faults & Incidents</span>
-            <span class="nav-badge">2</span>
-          </a>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">Store</div>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('inventory', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-boxes"></i></span>
-            <span class="nav-text">Inventory</span>
-          </a>
-        </div>
-        <!-- NEW: Instagram-style Feed Menu Item -->
-        <div class="nav-section">
-          <div class="nav-label">Social</div>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('feed', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fab fa-instagram"></i></span>
-            <span class="nav-text">Maintenance Feed</span>
-          </a>
-        </div>
-        <div class="nav-section">
-          <div class="nav-label">System</div>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('documents', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-folder-open"></i></span>
-            <span class="nav-text">Documents</span>
-          </a>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('reports', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
-            <span class="nav-text">Reports</span>
-          </a>
-          <a
-            class="nav-item"
-            href="#"
-            onclick="
-              showPage('users', this);
-              return false;
-            "
-          >
-            <span class="active-indicator"></span>
-            <span class="nav-icon"><i class="fas fa-users-cog"></i></span>
-            <span class="nav-text">User Management</span>
-          </a>
-        </div>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="user-card">
-          <div class="user-avatar">RK</div>
-          <div class="user-info">
-            <div class="user-name">Rajesh Kumar</div>
-            <div class="user-role">Plant Incharge</div>
+    <!-- ============================================ -->
+    <!-- LOGIN PAGE - SHOWN FIRST (Like Facebook) -->
+    <!-- ============================================ -->
+    <!-- ============================================ -->
+    <!-- LOGIN PAGE - SHOWN FIRST (Like Facebook) -->
+    <!-- ============================================ -->
+    <div class="login-page" id="loginPage">
+      <div class="login-container">
+        <div class="login-brand">
+          <div class="brand-icon">
+            <i class="fas fa-water"></i>
+            <i class="fas fa-bolt"></i>
           </div>
-          <i
-            class="fas fa-ellipsis-v"
-            style="color: var(--text-muted); font-size: 12px; margin-left: auto"
-          ></i>
-        </div>
-      </div>
-    </aside>
-
-    <!-- MAIN WRAP -->
-    <div class="main-wrap">
-      <header class="topbar">
-        <div class="topbar-toggle" onclick="toggleSidebar()">
-          <i class="fas fa-bars"></i>
-        </div>
-        <div class="topbar-breadcrumb">
-          <span>HydroPlant</span>
-          <i class="fas fa-chevron-right" style="font-size: 9px"></i>
-          <span class="current" id="breadcrumb">Dashboard</span>
-        </div>
-        <div class="topbar-search">
-          <i class="fas fa-search"></i>
-          <input
-            type="text"
-            placeholder="Search equipment, faults, work orders..."
-          />
-        </div>
-        <div class="topbar-actions">
-          <div class="plant-status-badge">
-            <span class="pulse"></span>PLANT ONLINE
-          </div>
-          <div style="position: relative">
-            <div class="icon-btn" onclick="toggleNotif()">
-              <i class="fas fa-bell"></i><span class="dot"></span>
-            </div>
-            <div class="notif-panel" id="notifPanel">
-              <div class="notif-header">
-                <h4>Notifications</h4>
-                <span class="notif-clear">Clear all</span>
-              </div>
-              <div class="notif-item">
-                <div
-                  class="notif-icon"
-                  style="background: rgba(226, 75, 74, 0.12); color: #e24b4a"
-                >
-                  <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="notif-content">
-                  <div class="notif-title">Unit 2 Bearing Temperature High</div>
-                  <div class="notif-desc">
-                    Generator bearing temp exceeded 78°C threshold.
-                  </div>
-                  <div class="notif-time">6 min ago</div>
-                </div>
-              </div>
-              <div class="notif-item">
-                <div
-                  class="notif-icon"
-                  style="background: rgba(245, 174, 58, 0.1); color: #f5ae3a"
-                >
-                  <i class="fas fa-tools"></i>
-                </div>
-                <div class="notif-content">
-                  <div class="notif-title">PM Due: Unit 3 Governor Service</div>
-                  <div class="notif-desc">Scheduled in 2 days.</div>
-                  <div class="notif-time">1 hr ago</div>
-                </div>
-              </div>
-              <div class="notif-item">
-                <div
-                  class="notif-icon"
-                  style="background: rgba(74, 157, 232, 0.1); color: #4a9de8"
-                >
-                  <i class="fas fa-boxes"></i>
-                </div>
-                <div class="notif-content">
-                  <div class="notif-title">Low Stock Alert: Bearing 6312</div>
-                  <div class="notif-desc">Only 2 units remaining.</div>
-                  <div class="notif-time">3 hrs ago</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
-            <i class="fas fa-adjust"></i>
-          </div>
-        </div>
-      </header>
-
-      <!-- PAGE: DASHBOARD -->
-      <div class="page-content page active" id="page-dashboard">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Plant Dashboard</div>
-            <div class="page-subtitle">
-              Seti Nadi Hydropower Plant · Unit Status & Live Overview ·
-              <span id="live-time"></span>
-            </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-secondary btn-sm">
-              <i class="fas fa-download"></i> Export
-            </button>
-            <button class="btn btn-primary btn-sm">
-              <i class="fas fa-plus"></i> Log Entry
-            </button>
-          </div>
-        </div>
-        <div class="kpi-grid">
-          <div
-            class="kpi-card"
-            style="
-              --kpi-color: var(--accent-teal);
-              --kpi-bg: rgba(41, 196, 143, 0.1);
-            "
-          >
-            <div class="kpi-icon"><i class="fas fa-bolt"></i></div>
-            <div class="kpi-info">
-              <div class="kpi-label">Today's Generation</div>
-              <div class="kpi-value">142<span class="kpi-unit">MWh</span></div>
-              <span class="kpi-delta up"
-                ><i class="fas fa-arrow-up"></i> +6.2% vs yesterday</span
-              >
-            </div>
-          </div>
-          <div
-            class="kpi-card"
-            style="
-              --kpi-color: var(--accent-blue);
-              --kpi-bg: rgba(74, 157, 232, 0.1);
-            "
-          >
-            <div class="kpi-icon"><i class="fas fa-tachometer-alt"></i></div>
-            <div class="kpi-info">
-              <div class="kpi-label">Current Load</div>
-              <div class="kpi-value">38.4<span class="kpi-unit">MW</span></div>
-              <span class="kpi-delta up"
-                ><i class="fas fa-arrow-up"></i> 87% of capacity</span
-              >
-            </div>
-          </div>
-          <div
-            class="kpi-card"
-            style="
-              --kpi-color: var(--accent-amber);
-              --kpi-bg: rgba(245, 174, 58, 0.1);
-            "
-          >
-            <div class="kpi-icon"><i class="fas fa-water"></i></div>
-            <div class="kpi-info">
-              <div class="kpi-label">Water Discharge</div>
-              <div class="kpi-value">
-                84.3<span class="kpi-unit">m³/s</span>
-              </div>
-              <span class="kpi-delta neutral"
-                ><i class="fas fa-minus"></i> stable</span
-              >
-            </div>
-          </div>
-          <div
-            class="kpi-card"
-            style="--kpi-color: #9f7aea; --kpi-bg: rgba(159, 122, 234, 0.1)"
-          >
-            <div
-              class="kpi-icon"
-              style="color: #9f7aea; background: rgba(159, 122, 234, 0.1)"
-            >
-              <i class="fas fa-layer-group"></i>
-            </div>
-            <div class="kpi-info">
-              <div class="kpi-label">Running Units</div>
-              <div class="kpi-value">3<span class="kpi-unit">/ 4</span></div>
-              <span class="kpi-delta neutral"
-                ><i class="fas fa-wrench"></i> U2 on maintenance</span
-              >
-            </div>
-          </div>
-        </div>
-        <div class="dash-grid">
-          <div class="card span-2">
-            <div class="card-header">
-              <div class="card-title">
-                <i
-                  class="fas fa-chart-area text-blue"
-                  style="margin-right: 8px"
-                ></i
-                >24-Hour Generation Trend
-              </div>
-              <div class="flex gap-8">
-                <button class="btn btn-secondary btn-sm">Daily</button>
-                <button class="btn btn-secondary btn-sm">Weekly</button>
-                <button class="btn btn-secondary btn-sm">Monthly</button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="chart-container"><canvas id="genChart"></canvas></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">
-                <i
-                  class="fas fa-layer-group text-teal"
-                  style="margin-right: 8px"
-                ></i
-                >Unit Status
-              </div>
-              <span class="badge badge-green">Live</span>
-            </div>
-            <div class="card-body">
-              <div class="unit-list">
-                <div class="unit-row">
-                  <div class="unit-led running"></div>
-                  <div class="unit-name">Unit 1</div>
-                  <div class="unit-load">
-                    <div style="font-size: 10px; color: var(--text-muted)">
-                      Load
-                    </div>
-                    <div class="unit-load-bar">
-                      <div class="unit-load-fill" style="width: 88%"></div>
-                    </div>
-                  </div>
-                  <div class="unit-mw">12.4 MW</div>
-                  <span class="unit-status-badge running">Running</span>
-                </div>
-                <div class="unit-row">
-                  <div class="unit-led warning"></div>
-                  <div class="unit-name">Unit 2</div>
-                  <div class="unit-load">
-                    <div style="font-size: 10px; color: var(--text-muted)">
-                      Load
-                    </div>
-                    <div class="unit-load-bar">
-                      <div class="unit-load-fill" style="width: 0%"></div>
-                    </div>
-                  </div>
-                  <div class="unit-mw">0.0 MW</div>
-                  <span class="unit-status-badge maint">Maint.</span>
-                </div>
-              </div>
-              <div class="divider"></div>
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1fr 1fr 1fr;
-                  gap: 12px;
-                  text-align: center;
-                "
-              >
-                <div class="gauge-wrap">
-                  <canvas id="g1" width="80" height="80"></canvas>
-                  <div class="gauge-val">84°</div>
-                  <div class="gauge-lbl">U1 Bearing</div>
-                </div>
-                <div class="gauge-wrap">
-                  <canvas id="g2" width="80" height="80"></canvas>
-                  <div class="gauge-val">91°</div>
-                  <div class="gauge-lbl">U3 Bearing</div>
-                </div>
-                <div class="gauge-wrap">
-                  <canvas id="g3" width="80" height="80"></canvas>
-                  <div class="gauge-val">50.1</div>
-                  <div class="gauge-lbl">Freq. Hz</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PAGE: MAINTENANCE FEED (Instagram Style - Standalone) -->
-      <div class="page-content page" id="page-feed">
-        <div class="page-header">
-          <div>
-            <div class="page-title">
-              <i class="fab fa-instagram" style="margin-right: 8px"></i>
-              Maintenance Feed
-            </div>
-            <div class="page-subtitle">
-              Real-time updates from the team · Latest first · Instagram style
-            </div>
-          </div>
-          <div class="page-actions">
-            <button
-              class="btn btn-primary btn-sm"
-              onclick="toggleInlinePostForm()"
-            >
-              <i class="fas fa-plus-circle"></i> New Post
-            </button>
-            <button
-              class="btn btn-secondary btn-sm"
-              onclick="generateFeedReport()"
-            >
-              <i class="fas fa-file-alt"></i> Report
-            </button>
-          </div>
+          <h1>HydroPlant<span>Manager</span></h1>
+          <p>Seti Nadi Hydropower Plant • Nepal</p>
         </div>
 
-        <!-- New Post Form (hidden by default) -->
-        <div class="inline-post-form" id="inlinePostForm" style="display: none">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">
-                <i class="fas fa-edit"></i> Create New Post
-              </div>
-              <button class="btn-icon" onclick="toggleInlinePostForm()">
-                <i class="fas fa-times"></i>
+        <div class="login-card">
+          <div class="login-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue to your dashboard</p>
+          </div>
+
+          <form id="loginForm" class="login-form">
+            <div class="input-group">
+              <i class="fas fa-envelope"></i>
+              <input
+                type="email"
+                id="loginEmail"
+                placeholder="Email address"
+                required
+                autocomplete="email"
+                value="admin@hydroplant.com"
+              />
+            </div>
+
+            <div class="input-group">
+              <i class="fas fa-lock"></i>
+              <input
+                type="password"
+                id="loginPassword"
+                placeholder="Password"
+                required
+                value="Admin@123"
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                onclick="togglePasswordVisibility()"
+              >
+                <i class="fas fa-eye-slash"></i>
               </button>
             </div>
-            <div class="card-body">
-              <div class="post-type-selector">
-                <button class="post-type-btn active" data-type="update">
-                  🔧 Task Update
-                </button>
-                <button class="post-type-btn" data-type="issue">
-                  ⚠️ Issue
-                </button>
-                <button class="post-type-btn" data-type="complete">
-                  ✅ Complete
-                </button>
-                <button class="post-type-btn" data-type="inspection">
-                  🔍 Inspection
-                </button>
-              </div>
-              <div class="form-group">
-                <input
-                  type="text"
-                  id="inlinePostTitle"
-                  placeholder="Title"
-                  class="form-control"
-                />
-              </div>
-              <div class="form-group">
-                <textarea
-                  id="inlinePostDesc"
-                  rows="3"
-                  placeholder="What's happening? (required)"
-                  class="form-control"
-                ></textarea>
-              </div>
-              <div class="form-row">
-                <select id="inlinePostEquipment" class="form-control">
-                  <option value="">Select Equipment</option>
-                  <option value="Unit 1 Generator">Unit 1 Generator</option>
-                  <option value="Unit 2 Generator">Unit 2 Generator</option>
-                  <option value="Unit 3 Generator">Unit 3 Generator</option>
-                  <option value="Main Transformer T1">
-                    Main Transformer T1
-                  </option>
-                  <option value="Governor System">Governor System</option>
-                </select>
-                <input
-                  type="text"
-                  id="inlinePostWorkOrder"
-                  placeholder="Work Order #"
-                  class="form-control"
-                />
-              </div>
-              <div class="form-group">
-                <input
-                  type="text"
-                  id="inlinePostTags"
-                  placeholder="Tags (comma: bearing, urgent)"
-                  class="form-control"
-                />
-              </div>
-              <!-- Photo Upload -->
-              <div class="form-group">
-                <label
-                  style="
-                    font-size: 12px;
-                    font-weight: 600;
-                    margin-bottom: 8px;
-                    display: block;
-                  "
-                  ><i class="fas fa-camera"></i> Add Photos (up to 5)</label
-                >
-                <div
-                  style="
-                    display: flex;
-                    gap: 10px;
-                    margin-bottom: 12px;
-                    flex-wrap: wrap;
-                  "
-                >
-                  <button
-                    type="button"
-                    class="btn-secondary btn-sm"
-                    id="feedTakePhotoBtn"
-                  >
-                    <i class="fas fa-camera"></i> Take Photo
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-secondary btn-sm"
-                    id="feedChoosePhotoBtn"
-                  >
-                    <i class="fas fa-images"></i> Choose from Gallery
-                  </button>
-                </div>
-                <input
-                  type="file"
-                  id="feedCameraInput"
-                  accept="image/*"
-                  capture="environment"
-                  style="display: none"
-                />
-                <input
-                  type="file"
-                  id="feedGalleryInput"
-                  accept="image/*"
-                  multiple
-                  style="display: none"
-                />
-                <div
-                  class="feed-photo-preview"
-                  id="feedPhotoPreview"
-                  style="display: flex; flex-wrap: wrap; gap: 10px"
-                ></div>
-              </div>
-              <div
-                class="new-post-actions"
-                style="
-                  display: flex;
-                  gap: 12px;
-                  justify-content: flex-end;
-                  margin-top: 8px;
-                "
-              >
-                <button
-                  class="btn btn-secondary"
-                  onclick="toggleInlinePostForm()"
-                >
-                  Cancel
-                </button>
-                <button class="btn btn-primary" onclick="submitInlinePost()">
-                  <i class="fas fa-paper-plane"></i> Post
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Feed Posts Container - Instagram style -->
-        <div class="feed-posts-container" id="feedPostsContainer">
-          <div
-            class="feed-loading"
-            id="feedLoading"
-            style="display: none; text-align: center; padding: 40px"
-          >
-            <i class="fas fa-spinner fa-spin"></i> Loading feed...
+            <div class="login-options">
+              <label class="checkbox-label">
+                <input type="checkbox" id="rememberMe" /> Keep me logged in
+              </label>
+              <a
+                href="#"
+                onclick="
+                  showForgotPassword();
+                  return false;
+                "
+                class="forgot-link"
+                >Forgot password?</a
+              >
+            </div>
+
+            <button type="submit" class="login-btn">
+              <span>Log In</span>
+              <i class="fas fa-arrow-right"></i>
+            </button>
+          </form>
+
+          <div class="login-footer">
+            <span>© 2024 HydroPlant Manager</span>
+            <span>v2.4</span>
           </div>
-          <div class="feed-posts" id="feedPosts"></div>
         </div>
       </div>
+    </div>
 
-      <!-- PAGE: MAINTENANCE (Feed tab REMOVED) -->
-      <div class="page-content page" id="page-maintenance">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Maintenance Dashboard</div>
-            <div class="page-subtitle">
-              Preventive Maintenance · Asset Health Tracking
+    <!-- FORGOT PASSWORD MODAL - UPDATED WITH 3 STEPS -->
+    <div class="modal" id="forgotModal" style="display: none">
+      <div class="modal-content" style="max-width: 450px">
+        <div class="modal-header">
+          <h3><i class="fas fa-key"></i> Reset Password</h3>
+          <button class="modal-close" onclick="closeForgotModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div
+            id="resetMessage"
+            class="reset-message"
+            style="display: none"
+          ></div>
+
+          <!-- Step 1: Enter Email -->
+          <div id="resetStep1">
+            <p style="margin-bottom: 20px">
+              Enter your email address and we'll send you a verification code to
+              reset your password.
+            </p>
+            <div class="input-group" style="margin-bottom: 20px">
+              <i class="fas fa-envelope"></i>
+              <input
+                type="email"
+                id="resetEmail"
+                placeholder="Registered email address"
+                class="form-control"
+                style="padding-left: 40px"
+              />
             </div>
           </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm" id="maintUploadBtn">
-              <i class="fas fa-cloud-upload-alt"></i> Import Excel
-            </button>
-            <button class="btn btn-secondary btn-sm" id="maintExportBtn">
-              <i class="fas fa-download"></i> Export Report
-            </button>
+
+          <!-- Step 2: Enter Verification Code -->
+          <div id="resetStep2" style="display: none">
+            <p style="margin-bottom: 20px">
+              We've sent a verification code to your email. Please enter it
+              below.
+            </p>
+            <div class="input-group" style="margin-bottom: 20px">
+              <i class="fas fa-shield-alt"></i>
+              <input
+                type="text"
+                id="resetCode"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+                class="form-control"
+                style="
+                  padding-left: 40px;
+                  text-align: center;
+                  font-size: 20px;
+                  letter-spacing: 5px;
+                "
+              />
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+              "
+            >
+              <span style="font-size: 12px; color: var(--text-muted)">
+                <i class="fas fa-clock"></i> Code expires in:
+                <span id="resetTimer">10:00</span>
+              </span>
+              <a
+                href="#"
+                onclick="
+                  resendVerificationCode();
+                  return false;
+                "
+                style="font-size: 12px; color: var(--accent-blue)"
+                >Resend code</a
+              >
+            </div>
+          </div>
+
+          <!-- Step 3: Set New Password -->
+          <div id="resetStep3" style="display: none">
+            <p style="margin-bottom: 20px">
+              Create a new password for your account.
+            </p>
+            <div class="input-group" style="margin-bottom: 15px">
+              <i class="fas fa-lock"></i>
+              <input
+                type="password"
+                id="newPassword"
+                placeholder="New password (min 6 characters)"
+                class="form-control"
+                style="padding-left: 40px"
+              />
+            </div>
+            <div class="input-group" style="margin-bottom: 20px">
+              <i class="fas fa-check-circle"></i>
+              <input
+                type="password"
+                id="confirmPassword"
+                placeholder="Confirm new password"
+                class="form-control"
+                style="padding-left: 40px"
+              />
+            </div>
+            <div
+              style="
+                background: var(--bg-raised);
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 10px;
+              "
+            >
+              <p style="font-size: 11px; color: var(--text-muted); margin: 0">
+                <i class="fas fa-info-circle"></i> Password requirements:
+              </p>
+              <ul
+                style="
+                  font-size: 10px;
+                  color: var(--text-muted);
+                  margin: 5px 0 0 20px;
+                "
+              >
+                <li>At least 6 characters long</li>
+                <li>Can include letters, numbers, and symbols</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeForgotModal()">
+            Cancel
+          </button>
+          <button class="btn-primary" id="resetBtn" onclick="sendResetCode()">
+            Send Reset Code
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MAIN APP - HIDDEN UNTIL LOGIN -->
+    <!-- ============================================ -->
+    <div class="main-app" id="mainApp" style="display: none">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-icon"><i class="fas fa-water"></i></div>
+          <div class="logo-text">
+            <div class="name">HydroPlant</div>
+            <div class="sub">Manager v2.4</div>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div class="user-avatar-large" id="userAvatar">RK</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebarUserName">Rajesh Kumar</div>
+            <div class="user-role" id="sidebarUserRole">Plant Incharge</div>
+          </div>
+          <button class="logout-btn-sidebar" onclick="logout()" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-section">
+            <div class="nav-label">Overview</div>
+            <a class="nav-item" href="#" data-page="dashboard">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"
+                ><i class="fas fa-tachometer-alt"></i
+              ></span>
+              <span class="nav-text">Dashboard</span>
+            </a>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">Operations</div>
+            <a class="nav-item" href="#" data-page="operations">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-bolt"></i></span>
+              <span class="nav-text">Operations</span>
+            </a>
+            <a class="nav-item" href="#" data-page="generation">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-chart-area"></i></span>
+              <span class="nav-text">Generation Log</span>
+            </a>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">Maintenance</div>
+            <a class="nav-item" href="#" data-page="maintenance">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-tools"></i></span>
+              <span class="nav-text">Maintenance</span>
+              <span class="nav-badge">3</span>
+            </a>
+            <a class="nav-item" href="#" data-page="workorders">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"
+                ><i class="fas fa-clipboard-list"></i
+              ></span>
+              <span class="nav-text">Work Orders</span>
+            </a>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">Assets</div>
+            <a class="nav-item" href="#" data-page="equipment">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-cogs"></i></span>
+              <span class="nav-text">Equipment</span>
+            </a>
+            <a class="nav-item" href="#" data-page="faults">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"
+                ><i class="fas fa-exclamation-triangle"></i
+              ></span>
+              <span class="nav-text">Faults & Incidents</span>
+              <span class="nav-badge">2</span>
+            </a>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">Store</div>
+            <a class="nav-item" href="#" data-page="inventory">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-boxes"></i></span>
+              <span class="nav-text">Inventory</span>
+            </a>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">Social</div>
+            <a class="nav-item" href="#" data-page="feed">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fab fa-instagram"></i></span>
+              <span class="nav-text">Maintenance Feed</span>
+            </a>
+          </div>
+          <div class="nav-section" id="adminSection" style="display: none">
+            <div class="nav-label">Administration</div>
+            <a class="nav-item" href="#" data-page="users">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-users-cog"></i></span>
+              <span class="nav-text">User Management</span>
+            </a>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">System</div>
+            <a class="nav-item" href="#" data-page="documents">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-folder-open"></i></span>
+              <span class="nav-text">Documents</span>
+            </a>
+            <a class="nav-item" href="#" data-page="reports">
+              <span class="active-indicator"></span>
+              <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
+              <span class="nav-text">Reports</span>
+            </a>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- MAIN WRAP -->
+      <div class="main-wrap">
+        <header class="topbar">
+          <div class="topbar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class="topbar-breadcrumb">
+            <span>HydroPlant</span>
+            <i class="fas fa-chevron-right" style="font-size: 9px"></i>
+            <span class="current" id="breadcrumb">Dashboard</span>
+          </div>
+          <div class="topbar-search">
+            <i class="fas fa-search"></i>
             <input
-              type="file"
-              id="maintFileInput"
-              accept=".xlsx,.xls,.csv"
-              style="display: none"
+              type="text"
+              placeholder="Search equipment, faults, work orders..."
             />
           </div>
-        </div>
-        <!-- Tabs - FEED TAB REMOVED -->
-        <div class="maint-tabs">
-          <button class="maint-tab active" data-tab="schedule">
-            <i class="fas fa-list-check"></i> PM Schedule
-          </button>
-          <button class="maint-tab" data-tab="health">
-            <i class="fas fa-heartbeat"></i> Asset Health
-          </button>
-          <button class="maint-tab" data-tab="history">
-            <i class="fas fa-history"></i> History
-          </button>
-          <button class="maint-tab" data-tab="analytics">
-            <i class="fas fa-chart-pie"></i> Analytics
-          </button>
-        </div>
-        <!-- Tab Contents (PM Schedule, Asset Health, History, Analytics - same as before) -->
-        <div class="maint-tab-content active" id="tabSchedule">
-          <div class="two-col">
-            <div class="maint-card">
-              <div class="maint-card-header">
-                <div class="maint-card-title">
-                  <i class="fas fa-clipboard-list"></i> Preventive Maintenance
-                  Schedule
-                </div>
-                <button class="btn-icon" onclick="addMaintenanceTask()">
-                  <i class="fas fa-plus"></i>
-                </button>
+          <div class="topbar-actions">
+            <div class="plant-status-badge">
+              <span class="pulse"></span>PLANT ONLINE
+            </div>
+            <div style="position: relative">
+              <div class="icon-btn" onclick="toggleNotif()">
+                <i class="fas fa-bell"></i><span class="dot"></span>
               </div>
-              <div class="maint-card-body">
-                <div class="pm-task-list" id="pmTaskList"></div>
+              <div class="notif-panel" id="notifPanel">
+                <div class="notif-header">
+                  <h4>Notifications</h4>
+                  <span class="notif-clear">Clear all</span>
+                </div>
+                <div class="notif-item">
+                  <div
+                    class="notif-icon"
+                    style="background: rgba(226, 75, 74, 0.12); color: #e24b4a"
+                  >
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </div>
+                  <div class="notif-content">
+                    <div class="notif-title">
+                      Unit 2 Bearing Temperature High
+                    </div>
+                    <div class="notif-time">6 min ago</div>
+                  </div>
+                </div>
+                <div class="notif-item">
+                  <div
+                    class="notif-icon"
+                    style="background: rgba(245, 174, 58, 0.1); color: #f5ae3a"
+                  >
+                    <i class="fas fa-tools"></i>
+                  </div>
+                  <div class="notif-content">
+                    <div class="notif-title">
+                      PM Due: Unit 3 Governor Service
+                    </div>
+                    <div class="notif-time">1 hr ago</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="maint-card">
-              <div class="maint-card-header">
-                <div class="maint-card-title">
-                  <i class="fas fa-calendar-alt"></i> Due Calendar
+            <div class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+              <i class="fas fa-adjust"></i>
+            </div>
+            <div class="icon-btn" onclick="logout()" title="Logout">
+              <i class="fas fa-sign-out-alt"></i>
+            </div>
+          </div>
+        </header>
+
+        <!-- PAGE: DASHBOARD -->
+        <div class="page-content page active" id="page-dashboard">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Plant Dashboard</div>
+              <div class="page-subtitle">
+                Seti Nadi Hydropower Plant · Unit Status & Live Overview ·
+                <span id="live-time"></span>
+              </div>
+            </div>
+          </div>
+          <div class="kpi-grid">
+            <div
+              class="kpi-card"
+              style="
+                --kpi-color: var(--accent-teal);
+                --kpi-bg: rgba(41, 196, 143, 0.1);
+              "
+            >
+              <div class="kpi-icon"><i class="fas fa-bolt"></i></div>
+              <div class="kpi-info">
+                <div class="kpi-label">Today's Generation</div>
+                <div class="kpi-value">
+                  142<span class="kpi-unit">MWh</span>
                 </div>
-                <div class="calendar-nav">
-                  <button class="btn-icon-sm" id="prevWeek">
-                    <i class="fas fa-chevron-left"></i></button
-                  ><span id="calendarWeekLabel">This Week</span
-                  ><button class="btn-icon-sm" id="nextWeek">
-                    <i class="fas fa-chevron-right"></i>
+                <span class="kpi-delta up"
+                  ><i class="fas fa-arrow-up"></i> +6.2%</span
+                >
+              </div>
+            </div>
+            <div
+              class="kpi-card"
+              style="
+                --kpi-color: var(--accent-blue);
+                --kpi-bg: rgba(74, 157, 232, 0.1);
+              "
+            >
+              <div class="kpi-icon"><i class="fas fa-tachometer-alt"></i></div>
+              <div class="kpi-info">
+                <div class="kpi-label">Current Load</div>
+                <div class="kpi-value">
+                  38.4<span class="kpi-unit">MW</span>
+                </div>
+                <span class="kpi-delta up"
+                  ><i class="fas fa-arrow-up"></i> 87%</span
+                >
+              </div>
+            </div>
+            <div
+              class="kpi-card"
+              style="
+                --kpi-color: var(--accent-amber);
+                --kpi-bg: rgba(245, 174, 58, 0.1);
+              "
+            >
+              <div class="kpi-icon"><i class="fas fa-water"></i></div>
+              <div class="kpi-info">
+                <div class="kpi-label">Water Discharge</div>
+                <div class="kpi-value">
+                  84.3<span class="kpi-unit">m³/s</span>
+                </div>
+                <span class="kpi-delta neutral">stable</span>
+              </div>
+            </div>
+            <div
+              class="kpi-card"
+              style="--kpi-color: #9f7aea; --kpi-bg: rgba(159, 122, 234, 0.1)"
+            >
+              <div class="kpi-icon"><i class="fas fa-layer-group"></i></div>
+              <div class="kpi-info">
+                <div class="kpi-label">Running Units</div>
+                <div class="kpi-value">3<span class="kpi-unit">/4</span></div>
+                <span class="kpi-delta neutral">U2 on maint</span>
+              </div>
+            </div>
+          </div>
+          <div class="dash-grid">
+            <div class="card span-2">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fas fa-chart-area text-blue"></i> 24-Hour Generation
+                  Trend
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-container">
+                  <canvas id="genChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Unit Status</div>
+              </div>
+              <div class="card-body">
+                <div class="unit-list">
+                  <div class="unit-row">
+                    <div class="unit-led running"></div>
+                    <div class="unit-name">Unit 1</div>
+                    <div class="unit-load">
+                      <div class="unit-load-bar">
+                        <div class="unit-load-fill" style="width: 88%"></div>
+                      </div>
+                    </div>
+                    <div class="unit-mw">12.4 MW</div>
+                    <span class="unit-status-badge running">Running</span>
+                  </div>
+                  <div class="unit-row">
+                    <div class="unit-led warning"></div>
+                    <div class="unit-name">Unit 2</div>
+                    <div class="unit-load">
+                      <div class="unit-load-bar">
+                        <div class="unit-load-fill" style="width: 0%"></div>
+                      </div>
+                    </div>
+                    <div class="unit-mw">0.0 MW</div>
+                    <span class="unit-status-badge maint">Maint.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGE: MAINTENANCE FEED -->
+        <div class="page-content page" id="page-feed">
+          <div class="page-header">
+            <div>
+              <div class="page-title">
+                <i class="fab fa-instagram"></i> Maintenance Feed
+              </div>
+              <div class="page-subtitle">Real-time updates from the team</div>
+            </div>
+            <div>
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="toggleInlinePostForm()"
+              >
+                <i class="fas fa-plus-circle"></i> New Post
+              </button>
+            </div>
+          </div>
+          <div
+            class="inline-post-form"
+            id="inlinePostForm"
+            style="display: none"
+          >
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Create New Post</div>
+                <button class="btn-icon" onclick="toggleInlinePostForm()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="post-type-selector">
+                  <button class="post-type-btn active" data-type="update">
+                    🔧 Task Update</button
+                  ><button class="post-type-btn" data-type="issue">
+                    ⚠️ Issue</button
+                  ><button class="post-type-btn" data-type="complete">
+                    ✅ Complete</button
+                  ><button class="post-type-btn" data-type="inspection">
+                    🔍 Inspection
+                  </button>
+                </div>
+                <div class="form-group">
+                  <input
+                    type="text"
+                    id="inlinePostTitle"
+                    placeholder="Title"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <textarea
+                    id="inlinePostDesc"
+                    rows="3"
+                    placeholder="What's happening?"
+                    class="form-control"
+                  ></textarea>
+                </div>
+                <div class="form-row">
+                  <select id="inlinePostEquipment" class="form-control">
+                    <option value="">Select Equipment</option>
+                    <option>Unit 1 Generator</option>
+                    <option>Unit 2 Generator</option>
+                    <option>Unit 3 Generator</option></select
+                  ><input
+                    type="text"
+                    id="inlinePostWorkOrder"
+                    placeholder="Work Order #"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <input
+                    type="text"
+                    id="inlinePostTags"
+                    placeholder="Tags (comma: bearing, urgent)"
+                    class="form-control"
+                  />
+                </div>
+                <div
+                  class="new-post-actions"
+                  style="display: flex; gap: 12px; justify-content: flex-end"
+                >
+                  <button
+                    class="btn btn-secondary"
+                    onclick="toggleInlinePostForm()"
+                  >
+                    Cancel</button
+                  ><button class="btn btn-primary" onclick="submitInlinePost()">
+                    Post
                   </button>
                 </div>
               </div>
-              <div class="maint-card-body">
-                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+          </div>
+          <div class="feed-posts-container" id="feedPostsContainer">
+            <div class="feed-posts" id="feedPosts"></div>
+          </div>
+        </div>
+
+        <!-- PAGE: MAINTENANCE -->
+        <div class="page-content page" id="page-maintenance">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Maintenance Dashboard</div>
+              <div class="page-subtitle">
+                Preventive Maintenance · Asset Health Tracking
               </div>
             </div>
           </div>
-        </div>
-        <div class="maint-tab-content" id="tabHealth">
-          <div class="two-col">
+          <div class="maint-tabs">
+            <button class="maint-tab active" data-tab="schedule">
+              PM Schedule</button
+            ><button class="maint-tab" data-tab="health">Asset Health</button>
+          </div>
+          <div class="maint-tab-content active" id="tabSchedule">
+            <div class="two-col">
+              <div class="maint-card">
+                <div class="maint-card-header">
+                  <div class="maint-card-title">
+                    Preventive Maintenance Schedule
+                  </div>
+                  <button class="btn-icon" onclick="addMaintenanceTask()">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+                <div class="maint-card-body">
+                  <div class="pm-task-list" id="pmTaskList"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="maint-tab-content" id="tabHealth">
             <div class="maint-card">
               <div class="maint-card-header">
-                <div class="maint-card-title">
-                  <i class="fas fa-microchip"></i> Asset Health Score
-                </div>
+                <div class="maint-card-title">Asset Health Score</div>
               </div>
               <div class="maint-card-body">
                 <div class="asset-health-list" id="assetHealthList"></div>
               </div>
             </div>
-            <div class="maint-card">
-              <div class="maint-card-header">
-                <div class="maint-card-title">
-                  <i class="fas fa-chart-simple"></i> Health Trend
-                </div>
-              </div>
-              <div class="maint-card-body">
-                <canvas id="healthTrendChart" height="200"></canvas>
-              </div>
-            </div>
           </div>
         </div>
-        <div class="maint-tab-content" id="tabHistory">
-          <div class="maint-card">
-            <div class="maint-card-header">
-              <div class="maint-card-title">
-                <i class="fas fa-database"></i> Maintenance History Log
+
+        <!-- PAGE: GENERATION -->
+        <div class="page-content page" id="page-generation">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Generation Log</div>
+              <div class="page-subtitle">Hourly Generation Data</div>
+            </div>
+            <div>
+              <button class="btn btn-primary btn-sm" onclick="manualGenSync()">
+                <i class="fas fa-sync-alt"></i> Load Data
+              </button>
+            </div>
+          </div>
+          <div
+            class="gen-empty-state"
+            id="genEmptyState"
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              padding: 60px;
+            "
+          >
+            <div class="gen-empty-icon"><i class="fas fa-chart-line"></i></div>
+            <h3>No Generation Data Yet</h3>
+            <button class="btn btn-primary" onclick="manualGenSync()">
+              Load Sample Data
+            </button>
+          </div>
+          <div id="genDashboardContent" style="display: none">
+            <div class="gen-kpi-row" id="genKpiRow"></div>
+          </div>
+        </div>
+
+        <!-- PAGE: USERS (Admin only) -->
+        <div class="page-content page" id="page-users">
+          <div class="page-header">
+            <div>
+              <div class="page-title">
+                <i class="fas fa-users-cog"></i> User Management
               </div>
-              <div class="filter-group">
-                <select id="historyFilterAsset" class="filter-select">
-                  <option value="all">All Assets</option>
-                  <option value="Unit 1">Unit 1</option>
-                  <option value="Unit 2">Unit 2</option>
-                  <option value="Transformer">Transformer</option>
+              <div class="page-subtitle">
+                Manage system users and access controls
+              </div>
+            </div>
+            <div>
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="showAddUserModal()"
+              >
+                <i class="fas fa-user-plus"></i> Add User
+              </button>
+            </div>
+          </div>
+          <div
+            class="stats-row"
+            style="display: flex; gap: 16px; margin-bottom: 24px"
+          >
+            <div class="stat-card">
+              <div class="stat-value" id="totalUsers">0</div>
+              <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="activeUsers">0</div>
+              <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="onlineUsers">0</div>
+              <div class="stat-label">Online Now</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">System Users</div>
+              <div class="filter-bar">
+                <input
+                  type="text"
+                  id="userSearch"
+                  placeholder="Search users..."
+                  class="filter-input"
+                /><select id="userRoleFilter" class="filter-select">
+                  <option value="all">All Roles</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="plant_incharge">Plant Incharge</option>
+                  <option value="headworks_incharge">Headworks Incharge</option>
+                  <option value="operator">Operator</option>
+                  <option value="viewer">Viewer</option></select
+                ><select id="userStatusFilter" class="filter-select">
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>
-            <div class="maint-card-body">
-              <div class="table-wrapper">
-                <table class="maint-table" id="historyTable">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Asset</th>
-                      <th>Work Order</th>
-                      <th>Task</th>
-                      <th>Duration</th>
-                      <th>Downtime</th>
-                      <th>Technician</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="historyTableBody"></tbody>
-                </table>
-              </div>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>User</th>
+                    <th>Employee ID</th>
+                    <th>Role</th>
+                    <th>Shift</th>
+                    <th>Last Login</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+              </table>
             </div>
           </div>
         </div>
-        <div class="maint-tab-content" id="tabAnalytics">
-          <div class="two-col">
-            <div class="maint-card">
-              <div class="maint-card-header">
-                <div class="maint-card-title">Downtime by Cause</div>
-              </div>
-              <div class="maint-card-body">
-                <canvas id="downtimeChart" height="220"></canvas>
-              </div>
-            </div>
-            <div class="maint-card">
-              <div class="maint-card-header">
-                <div class="maint-card-title">MTBF Trend</div>
-              </div>
-              <div class="maint-card-body">
-                <canvas id="mtbfTrendChart" height="220"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="maint-card">
-            <div class="maint-card-header">
-              <div class="maint-card-title">Maintenance Cost Analysis</div>
-            </div>
-            <div class="maint-card-body">
-              <canvas id="costChart" height="200"></canvas>
-            </div>
-          </div>
-        </div>
-        <div class="maint-files-card" id="maintFilesCard" style="display: none">
-          <div class="maint-card-header">
-            <div class="maint-card-title">
-              <i class="fas fa-file-excel"></i> Imported Data
-            </div>
-            <button class="btn-clear" id="clearMaintData">Clear All</button>
-          </div>
-          <div class="maint-card-body" id="maintFileList"></div>
-        </div>
-      </div>
 
-      <!-- PAGE: USERS, GENERATION, etc. (keep your existing pages) -->
-      <div class="page-content page" id="page-users">
-        <div class="page-header">
-          <div>
-            <div class="page-title">User Management</div>
-            <div class="page-subtitle">Role-based Access Control</div>
+        <!-- Empty pages for other sections -->
+        <div class="page-content page" id="page-operations">
+          <div class="page-header">
+            <div><div class="page-title">Operations</div></div>
           </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">
-              <i class="fas fa-user-plus"></i> Add User
-            </button>
+          <div class="card">
+            <div class="card-body">
+              <p>Operations dashboard - Shift logs and real-time monitoring</p>
+            </div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">System Users</div>
+        <div class="page-content page" id="page-workorders">
+          <div class="page-header">
+            <div><div class="page-title">Work Orders</div></div>
           </div>
-          <div class="data-table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Shift</th>
-                  <th>Last Login</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <div class="flex items-center gap-8">
-                      <div
-                        class="user-avatar"
-                        style="width: 28px; height: 28px; font-size: 10px"
-                      >
-                        RK
-                      </div>
-                      <span class="bold">Rajesh Kumar</span>
-                    </div>
-                  </td>
-                  <td>r.kumar@hydroplant.np</td>
-                  <td><span class="badge badge-blue">Plant Incharge</span></td>
-                  <td>A</td>
-                  <td>Today 06:02</td>
-                  <td><span class="badge badge-green">Active</span></td>
-                  <td>
-                    <div class="flex gap-8">
-                      <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-edit"></i></button
-                      ><button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-lock"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="card">
+            <div class="card-body"><p>Work order management</p></div>
+          </div>
+        </div>
+        <div class="page-content page" id="page-equipment">
+          <div class="page-header">
+            <div><div class="page-title">Equipment Registry</div></div>
+          </div>
+          <div class="equip-grid" id="equipmentGrid"></div>
+        </div>
+        <div class="page-content page" id="page-faults">
+          <div class="page-header">
+            <div><div class="page-title">Faults & Incidents</div></div>
+            <div>
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="showAddFaultForm()"
+              >
+                <i class="fas fa-plus"></i> Report Fault
+              </button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Equipment</th>
+                    <th>Severity</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="faultsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="page-content page" id="page-inventory">
+          <div class="page-header">
+            <div><div class="page-title">Inventory</div></div>
+          </div>
+          <div class="card">
+            <div class="card-body"><p>Spare parts inventory management</p></div>
+          </div>
+        </div>
+        <div class="page-content page" id="page-documents">
+          <div class="page-header">
+            <div><div class="page-title">Documents</div></div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <p>Technical documentation and manuals</p>
+            </div>
+          </div>
+        </div>
+        <div class="page-content page" id="page-reports">
+          <div class="page-header">
+            <div><div class="page-title">Reports</div></div>
+          </div>
+          <div class="card">
+            <div class="card-body"><p>Generate and export reports</p></div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="page-content page" id="page-generation">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Generation Log</div>
-            <div class="page-subtitle">
-              Hourly Generation Data · Unit Performance · Google Sheets Sync
+    <!-- USER MODAL -->
+    <div class="modal" id="userModal" style="display: none">
+      <div class="modal-content" style="max-width: 550px">
+        <div class="modal-header">
+          <h3 id="userModalTitle">Add New User</h3>
+          <button class="modal-close" onclick="closeUserModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="userId" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name *</label
+              ><input type="text" id="userFullName" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>Email *</label
+              ><input type="email" id="userEmail" class="form-control" />
             </div>
           </div>
-          <div class="page-actions">
-            <button class="btn btn-secondary btn-sm" onclick="manualGenSync()">
-              <i class="fas fa-sync-alt"></i> Sync from Sheet</button
-            ><button class="btn btn-primary btn-sm" id="uploadCsvBtn">
-              <i class="fas fa-upload"></i> Import Excel/CSV</button
+          <div class="form-row">
+            <div class="form-group">
+              <label>Username *</label
+              ><input type="text" id="userUsername" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>Role *</label
+              ><select id="userRole" class="form-control">
+                <option value="super_admin">Super Admin</option>
+                <option value="plant_incharge">Plant Incharge</option>
+                <option value="headworks_incharge">Headworks Incharge</option>
+                <option value="operator">Operator</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone</label
+              ><input type="text" id="userPhone" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>Employee ID</label
+              ><input type="text" id="userEmployeeId" class="form-control" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Department</label
+              ><input type="text" id="userDepartment" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>Shift</label
+              ><select id="userShift" class="form-control">
+                <option value="">Not Applicable</option>
+                <option value="A">Shift A (06:00-14:00)</option>
+                <option value="B">Shift B (14:00-22:00)</option>
+                <option value="C">Shift C (22:00-06:00)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Password</label
             ><input
-              type="file"
-              id="csvFileInput"
-              accept=".xlsx,.xls,.csv"
-              style="display: none"
+              type="password"
+              id="userPassword"
+              class="form-control"
+              placeholder="Leave blank to keep current"
             />
           </div>
-        </div>
-        <div
-          class="gen-empty-state"
-          id="genEmptyState"
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 60px 40px;
-            background: var(--bg-card);
-            border-radius: 16px;
-          "
-        >
-          <div
-            class="gen-empty-icon"
-            style="font-size: 64px; opacity: 0.5; margin-bottom: 20px"
-          >
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <h3 class="gen-empty-title">No Generation Data Yet</h3>
-          <p class="gen-empty-desc">
-            Click "Sync from Sheet" to load data from Google Sheets,<br />or
-            upload an Excel/CSV file with your generation logs.
-          </p>
-          <button class="btn btn-primary" onclick="manualGenSync()">
-            <i class="fas fa-cloud-download-alt"></i> Sync from Google Sheet
-          </button>
-        </div>
-        <div id="genDashboardContent" style="display: none">
-          <!-- generation content -->
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-operations">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Operations</div>
-            <div class="page-subtitle">
-              View operating performance and control panels.
-            </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">Refresh</button>
+          <div class="form-group">
+            <label class="checkbox-label"
+              ><input type="checkbox" id="sendWelcomeEmail" /> Send welcome
+              email with login credentials</label
+            >
           </div>
         </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Operations page content will be shown here once configured.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-workorders">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Work Orders</div>
-            <div class="page-subtitle">
-              Track open work orders and assignments.
-            </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">New Work Order</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Work order details will appear here.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-equipment">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Equipment</div>
-            <div class="page-subtitle">Asset registry and status overview.</div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">Add Equipment</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Equipment asset list will be shown here.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-faults">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Faults & Incidents</div>
-            <div class="page-subtitle">
-              Review fault logs and incident reports.
-            </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">New Fault</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Faults and incident logs will be shown here.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-inventory">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Inventory</div>
-            <div class="page-subtitle">
-              Manage spare parts and stock levels.
-            </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">Update Stock</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Inventory records will be shown here.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-documents">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Documents</div>
-            <div class="page-subtitle">
-              View plant documentation and manuals.
-            </div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">Upload</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Document repository will be shown here.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-content page" id="page-reports">
-        <div class="page-header">
-          <div>
-            <div class="page-title">Reports</div>
-            <div class="page-subtitle">View and export system reports.</div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-primary btn-sm">Generate</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p>Reports will be shown here.</p>
-          </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeUserModal()">
+            Cancel</button
+          ><button class="btn-primary" onclick="saveUser()">Save User</button>
         </div>
       </div>
     </div>

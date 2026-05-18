@@ -1,197 +1,292 @@
 // ============================================
-// HYDROPLANT MANAGER - COMPLETE FIXED VERSION
+// HYDROPLANT MANAGER - COMPLETE WITH LOGIN
 // ============================================
 
-// Global Database Objects
+// Global variables
 let GenDB = { allDays: [], filteredDays: [] };
-let OpsDB = {
-  shiftLogs: [],
-  incidents: [],
-  handovers: [],
-  historicalData: null,
-};
-let FeedDB = { posts: [], currentPostId: null, actionsBound: false };
-let MaintDB = { tasks: [], history: [], assets: [], charts: {} };
-let EquipmentDB = { items: [], filteredItems: [] };
-let FaultsDB = { items: [], filteredItems: [], equipmentList: [] };
-
+let MaintDB = { tasks: [], history: [], assets: [] };
+let EquipmentDB = { items: [] };
+let FaultsDB = { items: [] };
 let feedPhotos = [];
-let quickPhotos = [];
-let quickSelectedSeverity = "Medium";
-let quickEditingId = null;
-
 const chartInstances = {};
 
-// ============================================
-// CORE NAVIGATION - FIXED
-// ============================================
+// User Management
+let UserDB = { currentUser: null, users: [] };
 
-function showPage(id, el) {
-  console.log("showPage called with id:", id);
+const ROLES = {
+  super_admin: { name: "Super Admin", level: 1, permissions: ["*"] },
+  plant_incharge: {
+    name: "Plant Incharge",
+    level: 2,
+    permissions: [
+      "view_dashboard",
+      "view_operations",
+      "view_generation",
+      "view_maintenance",
+      "view_workorders",
+      "view_equipment",
+      "view_faults",
+      "view_inventory",
+      "create_workorders",
+      "approve_workorders",
+    ],
+  },
+  headworks_incharge: {
+    name: "Headworks Incharge",
+    level: 3,
+    permissions: [
+      "view_dashboard",
+      "view_operations",
+      "view_generation",
+      "view_maintenance",
+      "view_workorders",
+      "view_equipment",
+      "view_faults",
+      "create_workorders",
+    ],
+  },
+  operator: {
+    name: "Operator",
+    level: 4,
+    permissions: [
+      "view_dashboard",
+      "view_operations",
+      "view_generation",
+      "view_maintenance",
+      "view_workorders",
+      "view_equipment",
+      "log_operations",
+      "complete_workorders",
+    ],
+  },
+  viewer: {
+    name: "Viewer",
+    level: 5,
+    permissions: [
+      "view_dashboard",
+      "view_generation",
+      "view_equipment",
+      "view_reports",
+    ],
+  },
+};
 
-  // Hide all pages
+const DEFAULT_USERS = [
+  {
+    id: "user_1",
+    username: "admin",
+    email: "admin@hydroplant.com",
+    password: "Admin@123",
+    fullName: "System Administrator",
+    role: "super_admin",
+    phone: "",
+    employeeId: "ADMIN001",
+    department: "IT",
+    shift: null,
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    createdBy: "system",
+  },
+  {
+    id: "user_2",
+    username: "rajesh.kumar",
+    email: "rajesh.kumar@hydroplant.com",
+    password: "Plant@2024",
+    fullName: "Rajesh Kumar",
+    role: "plant_incharge",
+    phone: "",
+    employeeId: "HPP001",
+    department: "Operations",
+    shift: null,
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    createdBy: "admin",
+  },
+  {
+    id: "user_3",
+    username: "prakash.thapa",
+    email: "prakash.thapa@hydroplant.com",
+    password: "Head@2024",
+    fullName: "Prakash Thapa",
+    role: "headworks_incharge",
+    phone: "",
+    employeeId: "HPP002",
+    department: "Headworks",
+    shift: null,
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    createdBy: "admin",
+  },
+  {
+    id: "user_4",
+    username: "suresh.gurung",
+    email: "suresh.gurung@hydroplant.com",
+    password: "Shift@2024",
+    fullName: "Suresh Gurung",
+    role: "operator",
+    phone: "",
+    employeeId: "HPP003",
+    department: "Operations",
+    shift: "A",
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    createdBy: "admin",
+  },
+  {
+    id: "user_5",
+    username: "anita.shrestha",
+    email: "anita.shrestha@hydroplant.com",
+    password: "View@2024",
+    fullName: "Anita Shrestha",
+    role: "viewer",
+    phone: "",
+    employeeId: "HPP004",
+    department: "Management",
+    shift: null,
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    createdBy: "admin",
+  },
+];
+
+// Initialize user system
+function initUserSystem() {
+  const saved = localStorage.getItem("hydroplant_users");
+  UserDB.users = saved ? JSON.parse(saved) : DEFAULT_USERS;
+  if (!saved)
+    localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+
+  const savedSession = localStorage.getItem("hydroplant_session");
+  if (savedSession) {
+    const session = JSON.parse(savedSession);
+    if (session.expires > Date.now()) {
+      UserDB.currentUser = UserDB.users.find((u) => u.id === session.userId);
+      if (UserDB.currentUser && UserDB.currentUser.isActive) {
+        showMainApp();
+        return;
+      }
+    }
+  }
+  showLoginPage();
+}
+
+function showLoginPage() {
+  document.getElementById("loginPage").style.display = "flex";
+  document.getElementById("mainApp").style.display = "none";
+}
+
+function showMainApp() {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("mainApp").style.display = "flex";
+
+  // Update sidebar with user info
+  document.getElementById("sidebarUserName").textContent =
+    UserDB.currentUser.fullName;
+  document.getElementById("sidebarUserRole").textContent =
+    ROLES[UserDB.currentUser.role].name;
+  document.getElementById("userAvatar").textContent =
+    UserDB.currentUser.fullName.charAt(0);
+
+  // Show/hide admin section
+  const adminSection = document.getElementById("adminSection");
+  if (adminSection)
+    adminSection.style.display =
+      UserDB.currentUser.role === "super_admin" ? "block" : "none";
+
+  // Initialize data
+  initDashboardCharts();
+  initMaintenance();
+  initEquipment();
+  initFaults();
+  loadMaintenanceFeed();
+
+  // Show dashboard
+  showPage("dashboard");
+}
+
+// Login handler
+document.addEventListener("DOMContentLoaded", () => {
+  initUserSystem();
+
+  document.getElementById("loginForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+    const rememberMe = document.getElementById("rememberMe").checked;
+
+    const user = UserDB.users.find(
+      (u) => u.email === email && u.password === password && u.isActive,
+    );
+    if (user) {
+      user.lastLogin = new Date().toISOString();
+      localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+
+      const session = {
+        userId: user.id,
+        loginTime: Date.now(),
+        expires: rememberMe
+          ? Date.now() + 30 * 24 * 60 * 60 * 1000
+          : Date.now() + 8 * 60 * 60 * 1000,
+      };
+      localStorage.setItem("hydroplant_session", JSON.stringify(session));
+      UserDB.currentUser = user;
+      showMainApp();
+    } else {
+      alert("Invalid email or password");
+    }
+  });
+});
+
+function logout() {
+  localStorage.removeItem("hydroplant_session");
+  UserDB.currentUser = null;
+  showLoginPage();
+}
+
+// Navigation
+function showPage(pageId) {
   document
     .querySelectorAll(".page")
     .forEach((p) => p.classList.remove("active"));
+  document.getElementById(`page-${pageId}`)?.classList.add("active");
 
-  // Remove active class from all nav items
   document
     .querySelectorAll(".nav-item")
     .forEach((n) => n.classList.remove("active"));
+  document
+    .querySelector(`.nav-item[data-page="${pageId}"]`)
+    ?.classList.add("active");
 
-  // Show selected page
-  const pg = document.getElementById("page-" + id);
-  if (!pg) {
-    console.error(`Page "page-${id}" not found`);
-    return;
-  }
-
-  pg.classList.add("active");
-  if (el) el.classList.add("active");
-
-  // Close mobile sidebar
-  if (typeof window.closeMobileSidebar === "function")
-    window.closeMobileSidebar();
-
-  // Update breadcrumb
+  const breadcrumb = document.getElementById("breadcrumb");
   const names = {
     dashboard: "Dashboard",
     operations: "Operations",
-    generation: "Generation Log",
+    generation: "Generation",
     maintenance: "Maintenance",
     workorders: "Work Orders",
     equipment: "Equipment",
-    faults: "Faults & Incidents",
+    faults: "Faults",
     inventory: "Inventory",
     documents: "Documents",
     reports: "Reports",
     users: "User Management",
     feed: "Maintenance Feed",
   };
-  const breadcrumb = document.getElementById("breadcrumb");
-  if (breadcrumb) breadcrumb.textContent = names[id] || id;
+  if (breadcrumb) breadcrumb.textContent = names[pageId] || pageId;
 
-  // Initialize page-specific features
-  if (id === "dashboard") initDashboardCharts();
-  if (id === "operations") initOperations();
-  if (id === "generation") initGenerationPage();
-  if (id === "maintenance") initMaintenance();
-  if (id === "equipment") initEquipment();
-  if (id === "faults") initFaults();
-  if (id === "feed") {
-    loadMaintenanceFeed();
-    setupFeedPhotoHandlers();
-  }
-
-  return false;
-}
-window.showPage = showPage;
-
-// ============================================
-// SIDEBAR & THEME FUNCTIONS
-// ============================================
-
-function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  if (!sidebar) return;
-  if (window.innerWidth <= 768) {
-    if (typeof window.toggleMobileSidebar === "function") {
-      window.toggleMobileSidebar();
-      return;
-    }
-  }
-  sidebar.classList.toggle("collapsed");
+  if (pageId === "users" && UserDB.currentUser?.role === "super_admin")
+    renderUserManagement();
+  if (pageId === "feed") loadMaintenanceFeed();
 }
 
-function toggleTheme() {
-  const h = document.documentElement;
-  const t = h.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  h.setAttribute("data-theme", t);
-  setTimeout(() => {
-    Object.values(chartInstances).forEach((c) => {
-      try {
-        c.destroy();
-      } catch (e) {}
-    });
-    Object.keys(chartInstances).forEach((k) => delete chartInstances[k]);
-    initDashboardCharts();
-  }, 50);
-}
-
-function toggleNotif() {
-  const panel = document.getElementById("notifPanel");
-  if (panel) panel.classList.toggle("open");
-}
-
-document.addEventListener("click", (e) => {
-  const panel = document.getElementById("notifPanel");
-  if (
-    panel &&
-    !e.target.closest("#notifPanel") &&
-    !e.target.closest(".icon-btn")
-  ) {
-    panel.classList.remove("open");
-  }
-});
-
-// ============================================
-// LIVE CLOCK
-// ============================================
-
-function updateClock() {
-  const liveTime = document.getElementById("live-time");
-  if (liveTime) {
-    const now = new Date();
-    liveTime.textContent =
-      now.toLocaleDateString("en-IN", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }) +
-      " · " +
-      now.toLocaleTimeString("en-IN", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-  }
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ============================================
-// CHART HELPERS
-// ============================================
-
-function isDark() {
-  return document.documentElement.getAttribute("data-theme") === "dark";
-}
-function gridColor() {
-  return isDark() ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)";
-}
-function textColor() {
-  return isDark() ? "#8b96a8" : "#64748b";
-}
-
-function mkChart(id, config) {
-  if (chartInstances[id]) chartInstances[id].destroy();
-  const ctx = document.getElementById(id);
-  if (!ctx) return null;
-  chartInstances[id] = new Chart(ctx, config);
-  return chartInstances[id];
-}
-
-// ============================================
-// DASHBOARD CHARTS
-// ============================================
-
+// Dashboard Charts
 function initDashboardCharts() {
-  // Generation Chart
-  const hours = Array.from(
-    { length: 24 },
-    (_, i) => `${String(i).padStart(2, "0")}:00`,
-  );
+  const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
   const gen = [
     0, 0, 0, 0, 0, 0, 11.2, 12.8, 13.4, 13.1, 12.9, 13.2, 12.7, 13.0, 13.3,
     13.4, 12.8, 13.1, 12.6, 12.4, 11.8, 12.0, 11.5, 0,
@@ -207,122 +302,18 @@ function initDashboardCharts() {
       labels: hours,
       datasets: [
         {
-          label: "Total Generation (MW)",
+          label: "Generation (MW)",
           data: gen,
-          borderColor: "#4a9de8",
-          backgroundColor: "rgba(74,157,232,.12)",
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2.5,
-          pointRadius: 0,
-          yAxisID: "y",
-        },
-        {
-          label: "Water Discharge (m³/s)",
-          data: water,
-          borderColor: "#29c48f",
-          backgroundColor: "transparent",
-          fill: false,
-          tension: 0.4,
-          borderWidth: 1.5,
-          pointRadius: 0,
-          borderDash: [4, 3],
-          yAxisID: "y1",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: "rgba(15,20,35,.9)" },
-      },
-      scales: {
-        x: {
-          grid: { color: gridColor() },
-          ticks: { color: textColor(), maxTicksLimit: 12, font: { size: 11 } },
-        },
-        y: {
-          grid: { color: gridColor() },
-          ticks: { color: textColor() },
-          title: { display: true, text: "MW", color: textColor() },
-        },
-        y1: {
-          position: "right",
-          grid: { drawOnChartArea: false },
-          ticks: { color: textColor() },
-          title: { display: true, text: "m³/s", color: textColor() },
-        },
-      },
-    },
-  });
-
-  // Draw gauges
-  drawGauge("g1", 84, 120, "#f5ae3a");
-  drawGauge("g2", 91, 120, "#f5ae3a");
-  drawGauge("g3", 50.1, 51, "#4a9de8");
-}
-
-function drawGauge(id, value, max, color) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const cx = 40,
-    cy = 40,
-    r = 30;
-  ctx.clearRect(0, 0, 80, 80);
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
-  ctx.strokeStyle = isDark() ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)";
-  ctx.lineWidth = 6;
-  ctx.lineCap = "round";
-  ctx.stroke();
-  const angle = 0.75 * Math.PI + (value / max) * 1.5 * Math.PI;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0.75 * Math.PI, angle);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 6;
-  ctx.lineCap = "round";
-  ctx.stroke();
-}
-
-function initWaterChart() {
-  const hours = Array.from(
-    { length: 24 },
-    (_, i) => `${String(i).padStart(2, "0")}:00`,
-  );
-  mkChart("waterChart", {
-    type: "line",
-    data: {
-      labels: hours,
-      datasets: [
-        {
-          label: "Discharge (m³/s)",
-          data: [
-            0, 0, 0, 0, 0, 0, 78, 80, 83, 85, 84, 86, 85, 84, 86, 87, 85, 84,
-            83, 82, 80, 79, 78, 0,
-          ],
           borderColor: "#4a9de8",
           backgroundColor: "rgba(74,157,232,.1)",
           fill: true,
           tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 0,
         },
         {
-          label: "Reservoir Level (m)",
-          data: [
-            183, 183, 182, 182, 182, 182, 183, 183, 184, 184, 184, 183, 183,
-            184, 184, 184, 183, 183, 183, 183, 183, 183, 183, 183,
-          ],
+          label: "Water (m³/s)",
+          data: water,
           borderColor: "#29c48f",
-          backgroundColor: "transparent",
-          fill: false,
-          tension: 0.4,
-          borderWidth: 2,
-          borderDash: [5, 4],
-          pointRadius: 0,
+          borderDash: [5, 5],
           yAxisID: "y1",
         },
       ],
@@ -330,1154 +321,715 @@ function initWaterChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          grid: { color: gridColor() },
-          ticks: { color: textColor(), maxTicksLimit: 12 },
-        },
-        y: {
-          grid: { color: gridColor() },
-          ticks: { color: textColor() },
-          title: { display: true, text: "m³/s", color: textColor() },
-        },
-        y1: {
-          position: "right",
-          grid: { drawOnChartArea: false },
-          ticks: { color: textColor() },
-          title: { display: true, text: "m", color: textColor() },
-        },
-      },
+      scales: { y1: { position: "right" } },
     },
   });
 }
 
-// ============================================
-// OPERATIONS MODULE - FIXED
-// ============================================
-
-function initOperations() {
-  console.log("Initializing Operations module...");
-  loadShiftLogs();
-  loadIncidents();
-  loadHandovers();
-  updateCurrentShiftDisplay();
+function mkChart(id, config) {
+  if (chartInstances[id]) chartInstances[id].destroy();
+  const ctx = document.getElementById(id);
+  if (ctx) chartInstances[id] = new Chart(ctx, config);
 }
 
-function loadShiftLogs() {
-  const saved = localStorage.getItem("ops_shift_logs");
-  OpsDB.shiftLogs = saved ? JSON.parse(saved) : [];
-  renderShiftLogs();
-}
-
-function loadIncidents() {
-  const saved = localStorage.getItem("ops_incidents");
-  OpsDB.incidents = saved ? JSON.parse(saved) : [];
-  renderIncidents();
-}
-
-function loadHandovers() {
-  const saved = localStorage.getItem("ops_handovers");
-  OpsDB.handovers = saved ? JSON.parse(saved) : [];
-  renderHandovers();
-}
-
-function renderShiftLogs() {
-  const container = document.getElementById("shift-timeline");
-  if (!container) return;
-  if (OpsDB.shiftLogs.length === 0) {
-    container.innerHTML =
-      '<div class="shift-entry">No entries yet. Click "New Shift Log" to add.</div>';
-    return;
-  }
-  container.innerHTML = OpsDB.shiftLogs
-    .slice(0, 50)
-    .map(
-      (log) => `
-    <div class="shift-entry">
-      <div class="shift-time">${log.time || "N/A"}</div>
-      <div class="shift-badge shift-${log.type || "info"}">${(log.type || "INFO").toUpperCase()}</div>
-      <div class="shift-desc">${log.description || ""}</div>
-      <div class="shift-operator">${log.operator || "Unknown"}</div>
-    </div>
-  `,
-    )
-    .join("");
-}
-
-function renderIncidents() {
-  const container = document.getElementById("incidents-list");
-  if (!container) return;
-  if (!OpsDB.incidents || OpsDB.incidents.length === 0) {
-    container.innerHTML =
-      '<div class="shift-entry">No incidents reported.</div>';
-    return;
-  }
-  container.innerHTML = OpsDB.incidents
-    .slice(0, 20)
-    .map(
-      (inc) => `
-    <div class="shift-entry">
-      <div class="shift-time">${inc.time || (inc.timestamp ? new Date(inc.timestamp).toLocaleTimeString() : "N/A")}</div>
-      <div class="shift-badge shift-critical">INCIDENT</div>
-      <div class="shift-desc">${inc.description || "No description"}</div>
-      <div class="shift-operator">${inc.reportedBy || "Unknown"}</div>
-    </div>
-  `,
-    )
-    .join("");
-}
-
-function renderHandovers() {
-  const container = document.getElementById("handovers-list");
-  if (!container) return;
-  if (!OpsDB.handovers || OpsDB.handovers.length === 0) {
-    container.innerHTML = '<div class="shift-entry">No handover records.</div>';
-    return;
-  }
-  container.innerHTML = OpsDB.handovers
-    .slice(0, 10)
-    .map(
-      (h) => `
-    <div class="shift-entry">
-      <div class="shift-time">${h.fromShift || "?"} → ${h.toShift || "?"}</div>
-      <div class="shift-badge shift-info">HANDOVER</div>
-      <div class="shift-desc">${h.notes || "No notes"}</div>
-      <div class="shift-operator">${h.handedBy || "Unknown"}</div>
-    </div>
-  `,
-    )
-    .join("");
-}
-
-function updateCurrentShiftDisplay() {
-  const currentShiftSpan = document.getElementById("current-shift");
-  if (currentShiftSpan) {
-    const hour = new Date().getHours();
-    let shift = "Morning (6:00 - 14:00)";
-    if (hour >= 14 && hour < 22) shift = "Evening (14:00 - 22:00)";
-    else if (hour >= 22 || hour < 6) shift = "Night (22:00 - 6:00)";
-    currentShiftSpan.textContent = shift;
-  }
-}
-
-function openShiftLogModal() {
-  const modal = document.getElementById("shiftLogModal");
-  if (modal) {
-    modal.style.display = "flex";
-    const timeInput = document.getElementById("log-time");
-    if (timeInput)
-      timeInput.value = new Date().toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-  }
-}
-
-function closeShiftLogModal() {
-  const modal = document.getElementById("shiftLogModal");
-  if (modal) modal.style.display = "none";
-}
-
-function saveShiftLog() {
-  const entry = {
-    id: Date.now(),
-    time: document.getElementById("log-time")?.value || "",
-    type: document.getElementById("log-type")?.value || "info",
-    description: document.getElementById("log-description")?.value || "",
-    equipment: document.getElementById("log-equipment")?.value || "",
-    operator: document.querySelector(".user-name")?.textContent || "Operator",
-    timestamp: new Date().toISOString(),
-  };
-  if (!entry.description) {
-    showOpsStatus("Please enter a description", "error");
-    return;
-  }
-  OpsDB.shiftLogs.unshift(entry);
-  localStorage.setItem("ops_shift_logs", JSON.stringify(OpsDB.shiftLogs));
-  renderShiftLogs();
-  closeShiftLogModal();
-  document.getElementById("shiftLogForm")?.reset();
-  showOpsStatus("Shift log entry saved!", "success");
-}
-
-function showOpsStatus(message, type) {
-  let statusDiv = document.getElementById("opsStatusMsg");
-  if (!statusDiv) {
-    statusDiv = document.createElement("div");
-    statusDiv.id = "opsStatusMsg";
-    statusDiv.style.cssText =
-      "position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;z-index:2000";
-    document.body.appendChild(statusDiv);
-  }
-  const colors = {
-    success: "#2ecc71",
-    error: "#e74c3c",
-    info: "#3d8ef7",
-    warning: "#f5a623",
-  };
-  statusDiv.style.backgroundColor = colors[type] || colors.info;
-  statusDiv.innerHTML = message;
-  statusDiv.style.display = "block";
-  setTimeout(() => {
-    if (statusDiv) statusDiv.style.display = "none";
-  }, 3000);
-}
-
-function switchOpsTab(tabId) {
-  document
-    .querySelectorAll(".ops-tab")
-    .forEach((t) => t.classList.remove("active"));
-  document
-    .querySelectorAll(".ops-tab-content")
-    .forEach((c) => c.classList.remove("active"));
-  if (event && event.target) event.target.classList.add("active");
-  const content = document.getElementById(`ops-${tabId}`);
-  if (content) content.classList.add("active");
-}
-
-// ============================================
-// GENERATION PAGE - FIXED
-// ============================================
-
-function initGenerationPage() {
-  console.log("Initializing Generation page...");
-  const saved = localStorage.getItem("gen_days");
-  if (saved) {
-    GenDB.allDays = JSON.parse(saved);
-    GenDB.filteredDays = [...GenDB.allDays];
-    if (GenDB.allDays.length > 0) {
-      updateGenerationDashboard(GenDB.allDays);
-    } else {
-      createSampleGenData();
-    }
-  } else {
-    createSampleGenData();
-  }
-}
-
-function createSampleGenData() {
-  const hours = [];
-  for (let hour = 0; hour < 24; hour++) {
-    const isOperating = hour >= 6 && hour <= 22;
-    hours.push({
-      hour: hour,
-      hourStr: `${hour}:00`,
-      u1Shutdown: !isOperating,
-      u2Shutdown: !isOperating,
-      u1: { mw: isOperating ? 12.5 : 0, pf: 0.96, hz: 50.0 },
-      u2: { mw: isOperating ? 12.8 : 0, pf: 0.95, hz: 50.0 },
-      grid: { mw: null },
-      remarks: "",
-    });
-  }
-  const today = new Date();
-  const bsDate = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, "0")}/${String(today.getDate()).padStart(2, "0")}`;
-  const computed = {
-    u1Energy: 210.5,
-    u2Energy: 215.2,
-    totalEnergy: 425.7,
-    u1AvgMW: 12.5,
-    u2AvgMW: 12.8,
-    maxMW: 14.2,
-    opHours: 17,
-    shutdownHrs: 7,
-    avgPF: 0.955,
-    avgHz: 50.0,
-  };
-  GenDB.allDays = [{ bsDate, hours, computed }];
-  GenDB.filteredDays = GenDB.allDays;
-  localStorage.setItem("gen_days", JSON.stringify(GenDB.allDays));
-  updateGenerationDashboard(GenDB.allDays);
-  showGenStatus("Sample data loaded", "info");
-}
-
-function updateGenerationDashboard(days) {
-  if (!days || days.length === 0) return;
-  const day = days[0];
-  const c = day.computed;
-
-  // Update stats
-  const qsDays = document.getElementById("qsDays");
-  const qsHours = document.getElementById("qsHours");
-  const qsShutdown = document.getElementById("qsShutdown");
-  const qsPF = document.getElementById("qsPF");
-  if (qsDays) qsDays.innerHTML = days.length;
-  if (qsHours) qsHours.innerHTML = c.opHours;
-  if (qsShutdown) qsShutdown.innerHTML = c.shutdownHrs;
-  if (qsPF) qsPF.innerHTML = c.avgPF.toFixed(3);
-
-  // Update KPIs
-  const kpiRow = document.getElementById("genKpiRow");
-  if (kpiRow) {
-    kpiRow.innerHTML = `
-      <div class="gen-kpi-card cyan"><div class="gen-kpi-label"><i class="fas fa-bolt"></i> TOTAL GENERATION</div><div class="gen-kpi-value">${c.totalEnergy.toFixed(1)}<span class="gen-kpi-unit">MWh</span></div><div class="gen-kpi-sub">U1: ${c.u1Energy.toFixed(1)} + U2: ${c.u2Energy.toFixed(1)} MWh</div></div>
-      <div class="gen-kpi-card blue"><div class="gen-kpi-label"><i class="fas fa-charging-station"></i> AVG POWER</div><div class="gen-kpi-value">${c.u1AvgMW.toFixed(1)}<span class="gen-kpi-unit">MW</span></div><div class="gen-kpi-sub">Peak: ${c.maxMW.toFixed(1)} MW</div></div>
-      <div class="gen-kpi-card green"><div class="gen-kpi-label"><i class="fas fa-clock"></i> OPERATION</div><div class="gen-kpi-value">${c.opHours}<span class="gen-kpi-unit">hrs</span></div><div class="gen-kpi-sub">Shutdown: ${c.shutdownHrs} hrs</div></div>
-      <div class="gen-kpi-card amber"><div class="gen-kpi-label"><i class="fas fa-chart-line"></i> POWER FACTOR</div><div class="gen-kpi-value">${(c.avgPF * 100).toFixed(0)}<span class="gen-kpi-unit">%</span></div><div class="gen-kpi-sub">Frequency: ${c.avgHz.toFixed(2)} Hz</div></div>
-    `;
-  }
-
-  // Hide empty state, show content
-  const emptyState = document.getElementById("genEmptyState");
-  const content = document.getElementById("genDashboardContent");
-  if (emptyState) emptyState.style.display = "none";
-  if (content) content.style.display = "block";
-}
-
-function showGenStatus(message, type) {
-  let statusDiv = document.getElementById("genStatusMsg");
-  if (!statusDiv) {
-    statusDiv = document.createElement("div");
-    statusDiv.id = "genStatusMsg";
-    statusDiv.style.cssText =
-      "position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;z-index:1000";
-    document.body.appendChild(statusDiv);
-  }
-  const colors = {
-    success: "#2ecc71",
-    error: "#e74c3c",
-    info: "#3d8ef7",
-    warning: "#f5a623",
-  };
-  statusDiv.style.backgroundColor = colors[type] || colors.info;
-  statusDiv.innerHTML = message;
-  statusDiv.style.display = "block";
-  setTimeout(() => {
-    if (statusDiv) statusDiv.style.display = "none";
-  }, 3000);
-}
-
-function manualGenSync() {
-  showGenStatus("Sync feature - loading sample data", "info");
-  createSampleGenData();
-}
-
-// ============================================
-// MAINTENANCE FEED - INSTAGRAM STYLE
-// ============================================
-
-function setupFeedPhotoHandlers() {
-  const takeBtn = document.getElementById("feedTakePhotoBtn");
-  const chooseBtn = document.getElementById("feedChoosePhotoBtn");
-  const cameraInput = document.getElementById("feedCameraInput");
-  const galleryInput = document.getElementById("feedGalleryInput");
-
-  if (takeBtn && cameraInput) {
-    takeBtn.onclick = () => cameraInput.click();
-    cameraInput.onchange = (e) => {
-      if (e.target.files) handleFeedPhotos(e.target.files);
-      cameraInput.value = "";
-    };
-  }
-  if (chooseBtn && galleryInput) {
-    chooseBtn.onclick = () => galleryInput.click();
-    galleryInput.onchange = (e) => {
-      if (e.target.files) handleFeedPhotos(e.target.files);
-      galleryInput.value = "";
-    };
-  }
-}
-
-function handleFeedPhotos(files) {
-  const maxFiles = 5;
-  const maxSize = 5 * 1024 * 1024;
-  Array.from(files).forEach((file) => {
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > maxSize) return;
-    if (feedPhotos.length >= maxFiles) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      feedPhotos.push({
-        id: Date.now() + Math.random(),
-        data: e.target.result,
-        name: file.name,
-      });
-      renderFeedPhotoPreview();
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function renderFeedPhotoPreview() {
-  const container = document.getElementById("feedPhotoPreview");
-  if (!container) return;
-  if (feedPhotos.length === 0) {
-    container.innerHTML = "";
-    return;
-  }
-  container.innerHTML = feedPhotos
-    .map(
-      (photo, idx) => `
-    <div class="feed-photo-preview-item"><img src="${photo.data}" alt="Preview"><button class="feed-photo-remove" onclick="removeFeedPhoto(${idx})">✕</button></div>
-  `,
-    )
-    .join("");
-}
-
-function removeFeedPhoto(idx) {
-  feedPhotos.splice(idx, 1);
-  renderFeedPhotoPreview();
-}
-function clearFeedPhotos() {
-  feedPhotos = [];
-  renderFeedPhotoPreview();
-}
-
-function toggleInlinePostForm() {
-  const form = document.getElementById("inlinePostForm");
-  if (form) {
-    if (form.style.display === "none" || form.style.display === "") {
-      form.style.display = "block";
-      document.getElementById("inlinePostTitle").value = "";
-      document.getElementById("inlinePostDesc").value = "";
-      document.getElementById("inlinePostEquipment").value = "";
-      document.getElementById("inlinePostWorkOrder").value = "";
-      document.getElementById("inlinePostTags").value = "";
-      clearFeedPhotos();
-      form.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      form.style.display = "none";
-    }
-  }
-}
-
-function submitInlinePost() {
-  const title = document.getElementById("inlinePostTitle")?.value.trim() || "";
-  const description =
-    document.getElementById("inlinePostDesc")?.value.trim() || "";
-  const equipment = document.getElementById("inlinePostEquipment")?.value || "";
-  const workOrder =
-    document.getElementById("inlinePostWorkOrder")?.value.trim() || "";
-  const tags = document.getElementById("inlinePostTags")?.value.trim() || "";
-
-  let postType = "update";
-  document.querySelectorAll(".post-type-btn").forEach((btn) => {
-    if (btn.classList.contains("active"))
-      postType = btn.getAttribute("data-type");
-  });
-
-  const author =
-    document.querySelector(".user-name")?.textContent || "Maintenance Staff";
-
-  if (!title && !description) {
-    showFeedToast("Please enter a title or description", "#f5ae3a");
-    return;
-  }
-
-  const newPost = {
-    post_id:
-      "post_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
-    timestamp: new Date().toISOString(),
-    author: author,
-    post_type: postType,
-    title: title || description.substring(0, 50),
-    description: description,
-    equipment: equipment,
-    work_order_id: workOrder,
-    tags: tags,
-    photos: feedPhotos.map((p) => p.data),
-    like_count: 0,
-    likes: [],
-    comments: [],
-  };
-
-  let posts = JSON.parse(
-    localStorage.getItem("maintenance_feed_posts") || "[]",
+function toggleTheme() {
+  document.documentElement.setAttribute(
+    "data-theme",
+    document.documentElement.getAttribute("data-theme") === "dark"
+      ? "light"
+      : "dark",
   );
-  posts.unshift(newPost);
-  localStorage.setItem(
-    "maintenance_feed_posts",
-    JSON.stringify(posts.slice(0, 200)),
-  );
-  clearFeedPhotos();
-  toggleInlinePostForm();
-  loadMaintenanceFeed();
-  showFeedToast("✓ Post created!", "#29c48f");
+  initDashboardCharts();
+}
+function toggleSidebar() {
+  document.getElementById("sidebar")?.classList.toggle("collapsed");
+}
+function toggleNotif() {
+  document.getElementById("notifPanel")?.classList.toggle("open");
 }
 
+// Maintenance Feed
 function loadMaintenanceFeed() {
   const container = document.getElementById("feedPosts");
   if (!container) return;
   let posts = JSON.parse(
     localStorage.getItem("maintenance_feed_posts") || "[]",
   );
-  FeedDB.posts = posts;
   if (posts.length === 0) {
-    container.innerHTML = `<div class="feed-empty-state"><i class="fas fa-newspaper" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i><p>No posts yet.</p><p style="font-size:12px;">Click "Create New Post" to share maintenance updates.</p></div>`;
+    container.innerHTML =
+      '<div class="feed-empty-state">No posts yet. Click "New Post" to share updates.</div>';
     return;
   }
-  container.innerHTML = posts.map((post) => renderFeedCard(post)).join("");
-  bindFeedActions();
+  container.innerHTML = posts
+    .map(
+      (post) =>
+        `<div class="feed-post-card"><div class="feed-post-header"><div class="feed-post-avatar">${(post.author || "U")[0]}</div><div class="feed-post-author-info"><div class="feed-post-author">${post.author || "Unknown"}</div><div class="feed-post-time">${new Date(post.timestamp).toLocaleString()}</div></div></div><div class="feed-post-caption"><div class="caption-text"><strong>${post.title || ""}</strong> ${post.description || ""}</div></div></div>`,
+    )
+    .join("");
 }
 
-function renderFeedCard(post) {
-  const timeAgo = formatTimeAgo(post.timestamp);
-  const typeIcon =
-    { update: "🔧", issue: "⚠️", complete: "✅", inspection: "🔍" }[
-      post.post_type
-    ] || "📝";
-  const typeLabel =
-    {
-      update: "Task Update",
-      issue: "Issue Report",
-      complete: "Completed",
-      inspection: "Inspection",
-    }[post.post_type] || "Update";
-  const currentUser =
-    document.querySelector(".user-name")?.textContent || "User";
-  const isLiked = post.likes && post.likes.includes(currentUser);
+function toggleInlinePostForm() {
+  const f = document.getElementById("inlinePostForm");
+  if (f) f.style.display = f.style.display === "none" ? "block" : "none";
+}
+function submitInlinePost() {
+  alert("Post feature - would save to localStorage");
+  toggleInlinePostForm();
+  loadMaintenanceFeed();
+}
 
-  let photosHtml = "";
-  if (post.photos && post.photos.length > 0) {
-    if (post.photos.length === 1) {
-      photosHtml = `<div class="feed-post-photo-single" onclick="openPhotoViewer('${post.photos[0]}')"><img src="${post.photos[0]}" alt="Maintenance photo"></div>`;
-    } else if (post.photos.length === 2) {
-      photosHtml = `<div class="feed-post-photo-grid two-columns">${post.photos.map((p) => `<div class="grid-item" onclick="openPhotoViewer('${p}')"><img src="${p}" alt="Photo"></div>`).join("")}</div>`;
-    } else {
-      photosHtml = `<div class="feed-post-photo-grid three-columns">${post.photos
-        .slice(0, 9)
-        .map(
-          (p) =>
-            `<div class="grid-item" onclick="openPhotoViewer('${p}')"><img src="${p}" alt="Photo"></div>`,
-        )
-        .join("")}</div>`;
+// User Management
+function renderUserManagement() {
+  const tbody = document.getElementById("userTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = UserDB.users
+    .map(
+      (user) =>
+        `<tr><td><div class="user-avatar-mini" style="background:${getAvatarColor(user.role)}">${user.fullName[0]}</div></td><td><div><strong>${user.fullName}</strong><br><small>${user.email}</small></div></td><td>${user.employeeId || "-"}</td><td><span class="role-badge role-${user.role}">${ROLES[user.role]?.name || user.role}</span></td><td>${user.shift || "-"}</td><td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "Never"}</td><td><span class="status-badge ${user.isActive ? "status-active" : "status-inactive"}">${user.isActive ? "Active" : "Inactive"}</span></td><td><button class="btn-icon-sm" onclick="editUser('${user.id}')"><i class="fas fa-edit"></i></button> <button class="btn-icon-sm" onclick="resetUserPassword('${user.id}')"><i class="fas fa-key"></i></button> <button class="btn-icon-sm" onclick="toggleUserStatus('${user.id}')"><i class="fas ${user.isActive ? "fa-ban" : "fa-check-circle"}"></i></button></td></tr>`,
+    )
+    .join("");
+  document.getElementById("totalUsers").innerText = UserDB.users.length;
+  document.getElementById("activeUsers").innerText = UserDB.users.filter(
+    (u) => u.isActive,
+  ).length;
+}
+
+function getAvatarColor(role) {
+  return (
+    {
+      super_admin: "#e24b4a",
+      plant_incharge: "#4a9de8",
+      headworks_incharge: "#29c48f",
+      operator: "#f5ae3a",
+      viewer: "#9f7aea",
+    }[role] || "#576170"
+  );
+}
+
+function showAddUserModal() {
+  document.getElementById("userId").value = "";
+  document.getElementById("userForm")?.reset();
+  document.getElementById("userModal").style.display = "flex";
+}
+function closeUserModal() {
+  document.getElementById("userModal").style.display = "none";
+}
+function editUser(id) {
+  const u = UserDB.users.find((u) => u.id === id);
+  if (u) {
+    document.getElementById("userId").value = u.id;
+    document.getElementById("userFullName").value = u.fullName;
+    document.getElementById("userEmail").value = u.email;
+    document.getElementById("userUsername").value = u.username;
+    document.getElementById("userRole").value = u.role;
+    document.getElementById("userPhone").value = u.phone || "";
+    document.getElementById("userEmployeeId").value = u.employeeId || "";
+    document.getElementById("userDepartment").value = u.department || "";
+    document.getElementById("userShift").value = u.shift || "";
+    document.getElementById("userPassword").value = "";
+    document.getElementById("userModal").style.display = "flex";
+  }
+}
+function saveUser() {
+  const id = document.getElementById("userId").value;
+  const userData = {
+    id: id || "user_" + Date.now(),
+    fullName: document.getElementById("userFullName").value,
+    email: document.getElementById("userEmail").value,
+    username: document.getElementById("userUsername").value,
+    role: document.getElementById("userRole").value,
+    phone: document.getElementById("userPhone").value,
+    employeeId: document.getElementById("userEmployeeId").value,
+    department: document.getElementById("userDepartment").value,
+    shift: document.getElementById("userShift").value || null,
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    createdBy: UserDB.currentUser?.username || "admin",
+  };
+  const pwd = document.getElementById("userPassword").value;
+  if (pwd) userData.password = pwd;
+  if (id) {
+    const index = UserDB.users.findIndex((u) => u.id === id);
+    if (index !== -1) {
+      if (pwd) UserDB.users[index] = { ...UserDB.users[index], ...userData };
+      else
+        UserDB.users[index] = {
+          ...UserDB.users[index],
+          ...userData,
+          password: UserDB.users[index].password,
+        };
     }
+  } else {
+    if (!pwd) {
+      alert("Password required for new user");
+      return;
+    }
+    UserDB.users.push(userData);
+  }
+  localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+  closeUserModal();
+  renderUserManagement();
+  alert(id ? "User updated" : "User created");
+}
+// ============================================
+// PASSWORD RESET SYSTEM WITH EMAIL SIMULATION
+// ============================================
+
+// Store password reset requests
+let passwordResetRequests = [];
+
+// Show forgot password modal
+function showForgotPassword() {
+  document.getElementById("forgotModal").style.display = "flex";
+  document.getElementById("resetStep1").style.display = "block";
+  document.getElementById("resetStep2").style.display = "none";
+  document.getElementById("resetStep3").style.display = "none";
+  document.getElementById("resetEmail").value = "";
+  document.getElementById("resetCode").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("resetBtn").innerHTML = "Send Reset Code";
+  document.getElementById("resetBtn").onclick = sendResetCode;
+}
+
+function closeForgotModal() {
+  document.getElementById("forgotModal").style.display = "none";
+  // Clear any timeouts
+  if (window.countdownInterval) clearInterval(window.countdownInterval);
+}
+
+// Step 1: Send reset code to email
+function sendResetCode() {
+  const email = document.getElementById("resetEmail").value.trim();
+
+  if (!email) {
+    showResetMessage("Please enter your email address", "error");
+    return;
   }
 
-  const commentCount = post.comments?.length || 0;
+  // Find user by email
+  const user = UserDB.users.find((u) => u.email === email);
 
-  return `
-    <div class="feed-post-card" data-post-id="${post.post_id}">
-      <div class="feed-post-header">
-        <div class="feed-post-avatar">${(post.author || "U").charAt(0).toUpperCase()}</div>
-        <div class="feed-post-author-info">
-          <div class="feed-post-author">${escapeHtml(post.author || "Unknown")}</div>
-          <div class="feed-post-time"><span>${timeAgo}</span><span class="feed-post-badge">${typeIcon} ${typeLabel}</span></div>
+  if (!user) {
+    showResetMessage("No account found with this email address", "error");
+    return;
+  }
+
+  // Generate 6-digit verification code
+  const verificationCode = Math.floor(
+    100000 + Math.random() * 900000,
+  ).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+  // Store reset request
+  const resetRequest = {
+    email: email,
+    code: verificationCode,
+    expiresAt: expiresAt,
+    userId: user.id,
+  };
+
+  passwordResetRequests = passwordResetRequests.filter(
+    (r) => r.email !== email,
+  );
+  passwordResetRequests.push(resetRequest);
+
+  // SIMULATE SENDING EMAIL
+  // In production, replace this with actual email API call
+  showEmailSimulation(email, verificationCode);
+
+  // Also show in console for testing
+  console.log(`Password reset code for ${email}: ${verificationCode}`);
+
+  // Move to step 2
+  document.getElementById("resetStep1").style.display = "none";
+  document.getElementById("resetStep2").style.display = "block";
+  document.getElementById("resetBtn").innerHTML = "Verify Code";
+  document.getElementById("resetBtn").onclick = verifyResetCode;
+
+  // Start countdown timer
+  startCountdown(600); // 10 minutes = 600 seconds
+}
+
+// Simulate email sending with a modal
+function showEmailSimulation(email, code) {
+  // Create email simulation modal
+  const emailModal = document.createElement("div");
+  emailModal.className = "email-sim-modal";
+  emailModal.innerHTML = `
+    <div class="email-sim-content">
+      <div class="email-sim-header">
+        <i class="fas fa-envelope-open-text"></i>
+        <h3>📧 Email Sent (Demo)</h3>
+        <button class="email-sim-close" onclick="this.closest('.email-sim-modal').remove()">×</button>
+      </div>
+      <div class="email-sim-body">
+        <p><strong>To:</strong> ${email}</p>
+        <p><strong>Subject:</strong> Password Reset Request - HydroPlant Manager</p>
+        <div class="email-sim-divider"></div>
+        <div class="email-sim-code">
+          <p>Your password reset verification code is:</p>
+          <div class="verification-code">${code}</div>
+          <p class="email-note">This code will expire in 10 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
         </div>
       </div>
-      ${photosHtml}
-      <div class="feed-post-actions">
-        <button class="feed-action-btn like-btn ${isLiked ? "liked" : ""}" data-action="like" data-post-id="${post.post_id}"><i class="fa-regular fa-heart"></i> ${post.like_count || 0}</button>
-        <button class="feed-action-btn comment-btn" data-action="comment" data-post-id="${post.post_id}"><i class="fa-regular fa-comment"></i> ${commentCount}</button>
-      </div>
-      <div class="feed-post-caption">
-        ${post.equipment ? `<div class="caption-equipment">📍 ${escapeHtml(post.equipment)}${post.work_order_id ? ` · WO: ${escapeHtml(post.work_order_id)}` : ""}</div>` : ""}
-        ${post.title ? `<div class="caption-text"><strong>${escapeHtml(post.title)}</strong></div>` : ""}
-        ${post.description ? `<div class="caption-text">${escapeHtml(post.description)}</div>` : ""}
-        ${
-          post.tags
-            ? `<div class="caption-tags">${post.tags
-                .split(",")
-                .map((tag) => `<span class="caption-tag">#${tag.trim()}</span>`)
-                .join("")}</div>`
-            : ""
-        }
-      </div>
-      <div class="feed-comments-section" id="comments-${post.post_id}">
-        ${renderCommentsPreview(post.post_id, post.comments || [])}
+      <div class="email-sim-footer">
+        <button class="btn-primary" onclick="this.closest('.email-sim-modal').remove()">Got it</button>
       </div>
     </div>
   `;
-}
+  document.body.appendChild(emailModal);
 
-function renderCommentsPreview(postId, comments) {
-  if (!comments || comments.length === 0)
-    return `<div class="feed-no-comments" style="font-size:12px; color:var(--text-muted); padding:8px 0;">No comments yet.</div>`;
-  const visible = comments.slice(0, 2);
-  const hidden = comments.length - 2;
-  return `${visible.map((c) => `<div class="feed-comment"><span class="feed-comment-author">${escapeHtml(c.author)}:</span><span class="feed-comment-text">${escapeHtml(c.text)}</span><span class="feed-comment-time">${formatTimeAgo(c.timestamp)}</span></div>`).join("")}${hidden > 0 ? `<div class="view-more-comments" onclick="showAllComments('${postId}')">View all ${comments.length} comments</div>` : ""}`;
-}
-
-function bindFeedActions() {
-  if (FeedDB.actionsBound) return;
-  const feedPosts = document.getElementById("feedPosts");
-  if (!feedPosts) return;
-  feedPosts.addEventListener("click", (event) => {
-    const actionBtn = event.target.closest(".feed-action-btn");
-    if (!actionBtn) return;
-    const postId = actionBtn.dataset.postId;
-    const action = actionBtn.dataset.action;
-    if (!postId || !action) return;
-    if (action === "like") toggleFeedLike(postId);
-    else if (action === "comment") showFeedCommentForm(postId);
-  });
-  FeedDB.actionsBound = true;
-}
-
-function toggleFeedLike(postId) {
-  let posts = JSON.parse(
-    localStorage.getItem("maintenance_feed_posts") || "[]",
-  );
-  const postIndex = posts.findIndex((p) => p.post_id === postId);
-  const userName = document.querySelector(".user-name")?.textContent || "User";
-  if (postIndex !== -1) {
-    const post = posts[postIndex];
-    if (!post.likes) post.likes = [];
-    const likedIndex = post.likes.indexOf(userName);
-    if (likedIndex === -1) {
-      post.likes.push(userName);
-      post.like_count = (post.like_count || 0) + 1;
-    } else {
-      post.likes.splice(likedIndex, 1);
-      post.like_count = (post.like_count || 0) - 1;
-    }
-    localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts));
-    loadMaintenanceFeed();
-  }
-}
-
-function showFeedCommentForm(postId) {
-  FeedDB.currentPostId = postId;
-  const existingForm = document.getElementById(`comment-form-${postId}`);
-  if (existingForm) {
-    existingForm.remove();
-    return;
-  }
-  const commentsSection = document.getElementById(`comments-${postId}`);
-  if (!commentsSection) return;
-  const formHtml = `<div class="feed-comment-form" id="comment-form-${postId}"><div class="feed-comment-input-group"><input type="text" id="comment-input-${postId}" placeholder="Write a comment..." class="comment-input"><button type="button" class="btn-primary btn-sm" onclick="submitFeedComment('${postId}')">Post</button><button type="button" class="btn-secondary btn-sm" onclick="cancelFeedComment('${postId}')">Cancel</button></div></div>`;
-  commentsSection.insertAdjacentHTML("beforeend", formHtml);
-  const input = document.getElementById(`comment-input-${postId}`);
-  if (input) {
-    input.focus();
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submitFeedComment(postId);
-    });
-  }
-}
-
-function cancelFeedComment(postId) {
-  document.getElementById(`comment-form-${postId}`)?.remove();
-  FeedDB.currentPostId = null;
-}
-
-function submitFeedComment(postId) {
-  const commentInput = document.getElementById(`comment-input-${postId}`);
-  const commentText = commentInput?.value.trim();
-  if (!commentText) {
-    showFeedToast("Please enter a comment", "#f5ae3a");
-    return;
-  }
-  let posts = JSON.parse(
-    localStorage.getItem("maintenance_feed_posts") || "[]",
-  );
-  const postIndex = posts.findIndex((p) => p.post_id === postId);
-  const userName = document.querySelector(".user-name")?.textContent || "User";
-  if (postIndex !== -1) {
-    if (!posts[postIndex].comments) posts[postIndex].comments = [];
-    posts[postIndex].comments.push({
-      id: Date.now(),
-      author: userName,
-      text: commentText,
-      timestamp: new Date().toISOString(),
-    });
-    localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts));
-    loadMaintenanceFeed();
-    showFeedToast("✓ Comment posted!", "#29c48f");
-  }
-}
-
-function showAllComments(postId) {
-  let posts = JSON.parse(
-    localStorage.getItem("maintenance_feed_posts") || "[]",
-  );
-  const post = posts.find((p) => p.post_id === postId);
-  if (post && post.comments && post.comments.length > 0) {
-    let html =
-      '<div style="padding: 12px; background: var(--bg-raised); border-radius: 12px;"><h4 style="margin-bottom: 12px;">All Comments</h4>';
-    post.comments.forEach((c) => {
-      html += `<div class="feed-comment" style="margin-bottom: 8px;"><span class="feed-comment-author">${escapeHtml(c.author)}:</span><span class="feed-comment-text">${escapeHtml(c.text)}</span></div>`;
-    });
-    html +=
-      '<button class="btn-secondary btn-sm" onclick="loadMaintenanceFeed()">Close</button></div>';
-    const section = document.getElementById(`comments-${postId}`);
-    if (section) section.innerHTML = html;
-  }
-}
-
-function openPhotoViewer(photoUrl) {
-  const viewer = document.createElement("div");
-  viewer.className = "photo-viewer-overlay";
-  viewer.innerHTML = `<div class="photo-viewer-content"><img src="${photoUrl}" alt="Full size photo"><button class="photo-viewer-close" onclick="this.closest('.photo-viewer-overlay').remove()">✕</button></div>`;
-  document.body.appendChild(viewer);
-  viewer.onclick = (e) => {
-    if (e.target === viewer) viewer.remove();
-  };
-}
-
-function formatTimeAgo(timestamp) {
-  if (!timestamp) return "recently";
-  const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
-  return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? "s" : ""} ago`;
-}
-
-function escapeHtml(text) {
-  if (!text) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function showFeedToast(message, color) {
-  let toast = document.getElementById("feedToastMsg");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "feedToastMsg";
-    toast.style.cssText =
-      "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 20px;border-radius:40px;z-index:3000;font-size:13px;transition:all 0.3s;opacity:0;pointer-events:none;white-space:nowrap;";
-    document.body.appendChild(toast);
-  }
-  toast.style.backgroundColor = color;
-  toast.textContent = message;
-  toast.style.opacity = "1";
+  // Auto-close after 8 seconds
   setTimeout(() => {
-    toast.style.opacity = "0";
-  }, 2500);
+    if (emailModal.parentNode) emailModal.remove();
+  }, 8000);
 }
 
-function generateFeedReport() {
-  showFeedToast("Report feature - will export data", "#4a9de8");
+// Start countdown timer
+function startCountdown(seconds) {
+  if (window.countdownInterval) clearInterval(window.countdownInterval);
+
+  const timerDisplay = document.getElementById("resetTimer");
+  if (!timerDisplay) return;
+
+  let remaining = seconds;
+
+  function updateTimer() {
+    const minutes = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    timerDisplay.textContent = `${minutes}:${secs.toString().padStart(2, "0")}`;
+    timerDisplay.style.color =
+      remaining < 60 ? "#e24b4a" : "var(--text-secondary)";
+
+    if (remaining <= 0) {
+      clearInterval(window.countdownInterval);
+      timerDisplay.textContent = "Expired";
+      document.getElementById("resetBtn").disabled = true;
+      showResetMessage("Code expired. Please request a new one.", "error");
+    }
+  }
+
+  updateTimer();
+  window.countdownInterval = setInterval(() => {
+    remaining--;
+    updateTimer();
+    if (remaining <= 0) clearInterval(window.countdownInterval);
+  }, 1000);
 }
 
-function addSampleFeedPosts() {
-  const existing = localStorage.getItem("maintenance_feed_posts");
-  if (!existing || JSON.parse(existing).length === 0) {
-    const sample = [
-      {
-        post_id: "sample_1",
-        timestamp: new Date().toISOString(),
-        author: "Rajesh Kumar",
-        post_type: "update",
-        title: "Unit 2 Bearing Replacement Started",
-        description: "Removed old bearing. Housing cleaned.",
-        equipment: "Unit 2 Generator",
-        work_order_id: "WO-2024-0234",
-        tags: "bearing, replacement",
-        photos: [],
-        like_count: 2,
-        likes: [],
-        comments: [],
-      },
-    ];
-    localStorage.setItem("maintenance_feed_posts", JSON.stringify(sample));
+// Step 2: Verify the code
+function verifyResetCode() {
+  const email = document.getElementById("resetEmail").value;
+  const enteredCode = document.getElementById("resetCode").value.trim();
+
+  if (!enteredCode) {
+    showResetMessage("Please enter the verification code", "error");
+    return;
+  }
+
+  const resetRequest = passwordResetRequests.find((r) => r.email === email);
+
+  if (!resetRequest) {
+    showResetMessage(
+      "No reset request found. Please request a new code.",
+      "error",
+    );
+    return;
+  }
+
+  if (Date.now() > resetRequest.expiresAt) {
+    showResetMessage("Code has expired. Please request a new one.", "error");
+    passwordResetRequests = passwordResetRequests.filter(
+      (r) => r.email !== email,
+    );
+    return;
+  }
+
+  if (resetRequest.code !== enteredCode) {
+    showResetMessage("Invalid verification code. Please try again.", "error");
+    return;
+  }
+
+  // Code verified - move to step 3
+  document.getElementById("resetStep2").style.display = "none";
+  document.getElementById("resetStep3").style.display = "block";
+  document.getElementById("resetBtn").innerHTML = "Reset Password";
+  document.getElementById("resetBtn").onclick = resetPassword;
+
+  if (window.countdownInterval) clearInterval(window.countdownInterval);
+}
+
+// Step 3: Reset the password
+function resetPassword() {
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const email = document.getElementById("resetEmail").value;
+
+  // Validate password
+  if (!newPassword) {
+    showResetMessage("Please enter a new password", "error");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showResetMessage("Password must be at least 6 characters long", "error");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showResetMessage("Passwords do not match", "error");
+    return;
+  }
+
+  // Find and update user
+  const userIndex = UserDB.users.findIndex((u) => u.email === email);
+
+  if (userIndex !== -1) {
+    UserDB.users[userIndex].password = newPassword;
+    localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+
+    // Clear reset request
+    passwordResetRequests = passwordResetRequests.filter(
+      (r) => r.email !== email,
+    );
+
+    // Show success message
+    showResetMessage(
+      "✓ Password reset successful! You can now login with your new password.",
+      "success",
+    );
+
+    // Close modal after 2 seconds and redirect to login
+    setTimeout(() => {
+      closeForgotModal();
+      // Clear any stored session
+      localStorage.removeItem("hydroplant_session");
+      // Show login page
+      showLoginPage();
+    }, 2000);
+  } else {
+    showResetMessage("User not found. Please request a new reset.", "error");
   }
 }
 
-// ============================================
-// MAINTENANCE DASHBOARD - SIMPLIFIED
-// ============================================
+// Show message in reset modal
+function showResetMessage(message, type) {
+  const messageDiv = document.getElementById("resetMessage");
+  if (!messageDiv) return;
 
+  messageDiv.textContent = message;
+  messageDiv.className = `reset-message ${type}`;
+  messageDiv.style.display = "block";
+
+  setTimeout(() => {
+    messageDiv.style.display = "none";
+  }, 5000);
+}
+
+// Resend verification code
+function resendVerificationCode() {
+  const email = document.getElementById("resetEmail").value;
+
+  if (!email) {
+    showResetMessage("Email address is required", "error");
+    return;
+  }
+
+  const user = UserDB.users.find((u) => u.email === email);
+
+  if (!user) {
+    showResetMessage("No account found with this email", "error");
+    return;
+  }
+
+  // Generate new code
+  const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+
+  // Update reset request
+  const existingIndex = passwordResetRequests.findIndex(
+    (r) => r.email === email,
+  );
+  if (existingIndex !== -1) {
+    passwordResetRequests[existingIndex] = {
+      ...passwordResetRequests[existingIndex],
+      code: newCode,
+      expiresAt: expiresAt,
+    };
+  } else {
+    passwordResetRequests.push({
+      email: email,
+      code: newCode,
+      expiresAt: expiresAt,
+      userId: user.id,
+    });
+  }
+
+  // Show email simulation
+  showEmailSimulation(email, newCode);
+  console.log(`New reset code for ${email}: ${newCode}`);
+
+  showResetMessage("New verification code sent to your email!", "success");
+
+  // Restart timer
+  startCountdown(600);
+}
+function toggleUserStatus(id) {
+  const u = UserDB.users.find((u) => u.id === id);
+  if (u) {
+    u.isActive = !u.isActive;
+    localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+    renderUserManagement();
+  }
+}
+function filterUsers() {
+  const search =
+    document.getElementById("userSearch")?.value.toLowerCase() || "";
+  const role = document.getElementById("userRoleFilter")?.value || "all";
+  const status = document.getElementById("userStatusFilter")?.value || "all";
+  let filtered = UserDB.users;
+  if (search)
+    filtered = filtered.filter(
+      (u) =>
+        u.fullName.toLowerCase().includes(search) ||
+        u.email.toLowerCase().includes(search),
+    );
+  if (role !== "all") filtered = filtered.filter((u) => u.role === role);
+  if (status !== "all")
+    filtered = filtered.filter((u) => u.isActive === (status === "active"));
+  const tbody = document.getElementById("userTableBody");
+  if (tbody)
+    tbody.innerHTML = filtered
+      .map(
+        (user) =>
+          `<tr><td><div class="user-avatar-mini" style="background:${getAvatarColor(user.role)}">${user.fullName[0]}</div></td><td><div><strong>${user.fullName}</strong><br><small>${user.email}</small></div></td><td>${user.employeeId || "-"}</td><td><span class="role-badge role-${user.role}">${ROLES[user.role]?.name || user.role}</span></td><td>${user.shift || "-"}</td><td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "Never"}</td><td><span class="status-badge ${user.isActive ? "status-active" : "status-inactive"}">${user.isActive ? "Active" : "Inactive"}</span></td><td><button class="btn-icon-sm" onclick="editUser('${user.id}')"><i class="fas fa-edit"></i></button> <button class="btn-icon-sm" onclick="resetUserPassword('${user.id}')"><i class="fas fa-key"></i></button> <button class="btn-icon-sm" onclick="toggleUserStatus('${user.id}')"><i class="fas ${user.isActive ? "fa-ban" : "fa-check-circle"}"></i></button></td></tr>`,
+      )
+      .join("");
+}
+
+// Maintenance
 function initMaintenance() {
-  console.log("Initializing Maintenance module...");
   const defaultTasks = [
     {
       id: 1,
       asset: "Unit 2 Generator",
       task: "Replace Upper Guide Bearing",
-      frequency: "8000 hrs",
-      lastDone: "2080/12/10",
       nextDue: "2081/08/15",
       assignedTo: "Rajesh Kumar",
-      status: "pending",
       priority: "critical",
-    },
-    {
-      id: 2,
-      asset: "Unit 3 Governor",
-      task: "Quarterly Service",
-      frequency: "3 months",
-      lastDone: "2081/04/10",
-      nextDue: "2081/07/10",
-      assignedTo: "Prakash Thapa",
-      status: "pending",
-      priority: "warning",
     },
   ];
   MaintDB.tasks =
     JSON.parse(localStorage.getItem("maint_tasks")) || defaultTasks;
-  MaintDB.history = JSON.parse(localStorage.getItem("maint_history")) || [];
-  MaintDB.assets = JSON.parse(localStorage.getItem("maint_assets")) || [];
   renderPMTasks();
 }
-
 function renderPMTasks() {
-  const container = document.getElementById("pmTaskList");
-  if (!container) return;
-  if (MaintDB.tasks.length === 0) {
-    container.innerHTML = "<div>No tasks</div>";
-    return;
-  }
-  container.innerHTML = MaintDB.tasks
-    .map(
-      (task) =>
-        `<div class="pm-task ${task.priority}"><div class="pm-info"><div class="pm-title">${task.task}</div><div class="pm-meta"><span>${task.asset}</span><span>${task.assignedTo}</span></div></div><div class="pm-due">Due: ${task.nextDue}</div></div>`,
-    )
-    .join("");
+  const c = document.getElementById("pmTaskList");
+  if (c)
+    c.innerHTML = MaintDB.tasks
+      .map(
+        (t) =>
+          `<div class="pm-task ${t.priority}"><div class="pm-info"><div class="pm-title">${t.task}</div><div class="pm-meta"><span>${t.asset}</span><span>${t.assignedTo}</span></div></div><div class="pm-due">Due: ${t.nextDue}</div></div>`,
+      )
+      .join("");
 }
-
 function addMaintenanceTask() {
-  showMaintStatus("Add task feature", "info");
-}
-function exportMaintenanceReport() {
-  showMaintStatus("Export feature", "info");
-}
-function clearMaintenanceData() {
-  if (confirm("Clear all data?")) {
-    localStorage.removeItem("maint_tasks");
-    initMaintenance();
-    showMaintStatus("Data cleared", "success");
-  }
+  alert("Add maintenance task feature");
 }
 
-function showMaintStatus(message, type) {
-  let div = document.getElementById("maintStatusMsg");
-  if (!div) {
-    div = document.createElement("div");
-    div.id = "maintStatusMsg";
-    div.style.cssText =
-      "position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;z-index:1000";
-    document.body.appendChild(div);
-  }
-  const colors = { success: "#2ecc71", error: "#e74c3c", info: "#3d8ef7" };
-  div.style.backgroundColor = colors[type] || colors.info;
-  div.innerHTML = message;
-  div.style.display = "block";
-  setTimeout(() => {
-    if (div) div.style.display = "none";
-  }, 3000);
-}
-
-// ============================================
-// EQUIPMENT MODULE - SIMPLIFIED
-// ============================================
-
+// Equipment
 function initEquipment() {
-  console.log("Initializing Equipment module...");
-  const defaultEquipment = [
+  const defaultEquip = [
     {
       id: 1,
       name: "Unit 1 Generator",
       type: "Generator",
-      model: "Siemens SGT-800",
-      manufacturer: "Siemens",
+      model: "Siemens",
       status: "Operational",
       healthScore: 82,
       ratedPower: "15 MW",
-      lastMaint: "2081/05/10",
-      nextMaint: "2081/08/10",
     },
     {
       id: 2,
       name: "Unit 2 Generator",
       type: "Generator",
-      model: "Siemens SGT-800",
-      manufacturer: "Siemens",
+      model: "Siemens",
       status: "Maintenance",
       healthScore: 60,
       ratedPower: "15 MW",
-      lastMaint: "2081/04/15",
-      nextMaint: "2081/08/15",
     },
   ];
   EquipmentDB.items =
-    JSON.parse(localStorage.getItem("equipment_items")) || defaultEquipment;
+    JSON.parse(localStorage.getItem("equipment_items")) || defaultEquip;
   renderEquipmentGrid();
-  updateEquipmentStats();
 }
-
 function renderEquipmentGrid() {
-  const container = document.getElementById("equipmentGrid");
-  if (!container) return;
-  container.innerHTML = EquipmentDB.items
-    .map(
-      (item) => `
-    <div class="equip-card" onclick="showEquipmentDetails(${item.id})">
-      <div class="equip-card-header"><div class="equip-card-icon"><i class="fas fa-microchip"></i></div><div class="equip-status-badge ${item.status === "Operational" ? "operational" : "maintenance"}">${item.status}</div></div>
-      <div class="equip-card-body"><div class="equip-name">${item.name}</div><div class="equip-model">${item.model}</div>
-      <div class="equip-specs"><div class="equip-spec"><div class="equip-spec-label">Power</div><div class="equip-spec-value">${item.ratedPower}</div></div><div class="equip-spec"><div class="equip-spec-label">Health</div><div class="equip-spec-value">${item.healthScore}%</div></div></div></div>
-    </div>`,
-    )
-    .join("");
+  const c = document.getElementById("equipmentGrid");
+  if (c)
+    c.innerHTML = EquipmentDB.items
+      .map(
+        (item) =>
+          `<div class="equip-card"><div class="equip-card-icon"><i class="fas fa-microchip"></i></div><div class="equip-card-name">${item.name}</div><div class="equip-card-model">${item.model}</div><div class="equip-card-stats"><div class="equip-stat"><div class="equip-stat-label">Power</div><div class="equip-stat-val">${item.ratedPower}</div></div><div class="equip-stat"><div class="equip-stat-label">Health</div><div class="equip-stat-val">${item.healthScore}%</div></div></div></div>`,
+      )
+      .join("");
 }
 
-function updateEquipmentStats() {
-  const total = document.getElementById("totalEquipment");
-  const operational = document.getElementById("operationalCount");
-  const maint = document.getElementById("maintenanceCount");
-  if (total) total.innerText = EquipmentDB.items.length;
-  if (operational)
-    operational.innerText = EquipmentDB.items.filter(
-      (i) => i.status === "Operational",
-    ).length;
-  if (maint)
-    maint.innerText = EquipmentDB.items.filter(
-      (i) => i.status === "Maintenance",
-    ).length;
-}
-
-function showEquipmentDetails(id) {
-  alert("Equipment details for ID: " + id);
-}
-function closeEquipModal() {
-  document.getElementById("equipModal")?.remove();
-}
-function exportEquipmentData() {
-  showMaintStatus("Export equipment data", "info");
-}
-
-// ============================================
-// FAULTS MODULE - SIMPLIFIED
-// ============================================
-
+// Faults
 function initFaults() {
-  console.log("Initializing Faults module...");
   const defaultFaults = [
     {
       id: 1,
-      faultId: "FLT-2024-001",
+      faultId: "FLT-001",
       date: "2081/07/10",
-      time: "14:30",
       equipment: "Unit 2 Generator",
-      type: "Mechanical",
       severity: "Critical",
-      description: "Bearing temperature exceeded 85°C",
-      status: "Resolved",
-      downtime: 3.5,
-    },
-    {
-      id: 2,
-      faultId: "FLT-2024-002",
-      date: "2081/07/12",
-      time: "09:15",
-      equipment: "Main Transformer T1",
-      type: "Electrical",
-      severity: "High",
-      description: "Overcurrent trip",
-      status: "Resolved",
-      downtime: 1.5,
+      description: "Bearing temperature high",
+      status: "Open",
     },
   ];
   FaultsDB.items =
     JSON.parse(localStorage.getItem("faults_items")) || defaultFaults;
-  FaultsDB.filteredItems = [...FaultsDB.items];
   renderFaultsTable();
-  updateFaultStats();
 }
-
 function renderFaultsTable() {
   const tbody = document.getElementById("faultsTableBody");
-  if (!tbody) return;
-  tbody.innerHTML = FaultsDB.filteredItems
-    .map(
-      (fault) => `
-    <tr><td class="mono bold">${fault.faultId}</td><td>${fault.date}</td><td>${fault.time}</td><td>${fault.equipment}</td><td>${fault.type}</td><td><span class="severity-badge severity-${fault.severity.toLowerCase()}">${fault.severity}</span></td><td>${fault.description.substring(0, 35)}...</td><td>${fault.downtime || 0} hrs</td><td><span class="severity-badge">${fault.status}</span></td><td><button class="btn-icon-view" onclick="viewFaultDetails(${fault.id})"><i class="fas fa-eye"></i></button></td></tr>
-  `,
-    )
-    .join("");
-}
-
-function updateFaultStats() {
-  const open = document.getElementById("openFaults");
-  const critical = document.getElementById("criticalFaults");
-  if (open)
-    open.innerText = FaultsDB.filteredItems.filter(
-      (f) => f.status !== "Resolved",
-    ).length;
-  if (critical)
-    critical.innerText = FaultsDB.filteredItems.filter(
-      (f) => f.severity === "Critical",
-    ).length;
-}
-
-function viewFaultDetails(id) {
-  alert("Fault details for ID: " + id);
-}
-function filterFaults() {
-  renderFaultsTable();
-  updateFaultStats();
-}
-function resetFaultFilters() {
-  FaultsDB.filteredItems = [...FaultsDB.items];
-  renderFaultsTable();
-  updateFaultStats();
-}
-function exportFaultsData() {
-  showMaintStatus("Export faults data", "info");
-}
-function clearFaultsData() {
-  if (confirm("Clear all faults?")) {
-    localStorage.removeItem("faults_items");
-    initFaults();
-    showMaintStatus("Faults cleared", "success");
-  }
-}
-function closeFaultModal() {
-  document.getElementById("faultModal")?.remove();
+  if (tbody)
+    tbody.innerHTML = FaultsDB.items
+      .map(
+        (f) =>
+          `<tr><td class="mono">${f.faultId}</td><td>${f.date}</td><td>${f.equipment}</td><td><span class="severity-badge severity-${f.severity.toLowerCase()}">${f.severity}</span></td><td>${f.description}</td><td><span class="status-badge">${f.status}</span></td><td><button class="btn-icon-sm" onclick="alert('View details')"><i class="fas fa-eye"></i></button></td></tr>`,
+      )
+      .join("");
 }
 function showAddFaultForm() {
-  alert("Add fault form");
+  alert("Report fault feature");
 }
 
-// ============================================
-// MOBILE RESPONSIVENESS
-// ============================================
-
-function initMobileSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  if (!document.querySelector(".sidebar-overlay")) {
-    const overlay = document.createElement("div");
-    overlay.className = "sidebar-overlay";
-    document.body.appendChild(overlay);
-  }
-  const overlay = document.querySelector(".sidebar-overlay");
-
-  window.toggleMobileSidebar = function () {
-    if (window.innerWidth > 768) return;
-    if (sidebar.classList.contains("open")) {
-      sidebar.classList.remove("open");
-      overlay.classList.remove("active");
-      document.body.style.overflow = "";
-    } else {
-      sidebar.classList.add("open");
-      overlay.classList.add("active");
-      document.body.style.overflow = "hidden";
-    }
+// Generation
+function manualGenSync() {
+  const sample = {
+    bsDate: new Date().toISOString().split("T")[0],
+    computed: {
+      totalEnergy: 425.7,
+      u1Energy: 210.5,
+      u2Energy: 215.2,
+      u1AvgMW: 12.5,
+      u2AvgMW: 12.8,
+      maxMW: 14.2,
+      opHours: 17,
+      shutdownHrs: 7,
+      avgPF: 0.955,
+    },
   };
-  window.closeMobileSidebar = function () {
-    sidebar.classList.remove("open");
-    overlay.classList.remove("active");
-    document.body.style.overflow = "";
-  };
-  if (overlay) overlay.onclick = window.closeMobileSidebar;
-
-  const toggle = document.querySelector(".topbar-toggle");
-  if (toggle) {
-    toggle.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.toggleMobileSidebar();
-      return false;
-    };
-  }
-
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > 768 && sidebar.classList.contains("open"))
-      window.closeMobileSidebar();
-  });
-  document.querySelectorAll(".nav-item").forEach((item) =>
-    item.addEventListener("click", () => {
-      if (window.innerWidth <= 768) setTimeout(window.closeMobileSidebar, 100);
-    }),
-  );
+  GenDB.allDays = [sample];
+  localStorage.setItem("gen_days", JSON.stringify(GenDB.allDays));
+  document.getElementById("genEmptyState").style.display = "none";
+  document.getElementById("genDashboardContent").style.display = "block";
+  document.getElementById("genKpiRow").innerHTML =
+    `<div class="gen-kpi-card cyan"><div class="gen-kpi-label">TOTAL GENERATION</div><div class="gen-kpi-value">${sample.computed.totalEnergy}<span class="gen-kpi-unit">MWh</span></div></div><div class="gen-kpi-card blue"><div class="gen-kpi-label">AVG POWER</div><div class="gen-kpi-value">${sample.computed.u1AvgMW}<span class="gen-kpi-unit">MW</span></div></div><div class="gen-kpi-card green"><div class="gen-kpi-label">OPERATION</div><div class="gen-kpi-value">${sample.computed.opHours}<span class="gen-kpi-unit">hrs</span></div></div><div class="gen-kpi-card amber"><div class="gen-kpi-label">POWER FACTOR</div><div class="gen-kpi-value">${(sample.computed.avgPF * 100).toFixed(0)}<span class="gen-kpi-unit">%</span></div></div>`;
 }
 
-// ============================================
-// DOM CONTENT LOADED - MAIN INIT
-// ============================================
-
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM Content Loaded - Initializing...");
-
-  // Initialize sidebar
-  initMobileSidebar();
-
-  // Load sample data
-  addSampleFeedPosts();
-
-  // Initialize dashboard charts
-  initDashboardCharts();
-
-  // Set up nav item click handlers
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    const onclickAttr = item.getAttribute("onclick");
-    if (onclickAttr) {
-      const match = onclickAttr.match(/showPage\('([^']+)'/);
-      if (match) {
-        const pageId = match[1];
-        item.addEventListener("click", (e) => {
-          e.preventDefault();
-          showPage(pageId, item);
-        });
-      }
-    }
-  });
-
-  // Check which page is active on load
-  const activePage = document.querySelector(".page.active");
-  if (activePage) {
-    const id = activePage.id.replace("page-", "");
-    if (id === "dashboard") initDashboardCharts();
-    if (id === "feed") {
-      loadMaintenanceFeed();
-      setupFeedPhotoHandlers();
-    }
+// Forgot password
+let resetToken = null;
+function showForgotPassword() {
+  document.getElementById("forgotModal").style.display = "flex";
+  document.getElementById("otpSection").style.display = "none";
+  document.getElementById("resetBtn").innerHTML = "Send Code";
+  document.getElementById("resetBtn").onclick = sendResetCode;
+}
+function closeForgotModal() {
+  document.getElementById("forgotModal").style.display = "none";
+  resetToken = null;
+  document.getElementById("resetEmail").value = "";
+  document.getElementById("otpCode").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+}
+function sendResetCode() {
+  const email = document.getElementById("resetEmail").value;
+  const user = UserDB.users.find((u) => u.email === email);
+  if (!user) {
+    alert("Email not found");
+    return;
   }
+  if (!resetToken) {
+    resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+    alert(`Verification code sent to ${email}\n\nCode: ${resetToken}`);
+    document.getElementById("otpSection").style.display = "block";
+    document.getElementById("resetBtn").innerHTML = "Verify & Reset";
+    document.getElementById("resetBtn").onclick = verifyAndReset;
+  }
+}
+function verifyAndReset() {
+  const otp = document.getElementById("otpCode").value;
+  const newPwd = document.getElementById("newPassword").value;
+  const confirmPwd = document.getElementById("confirmPassword").value;
+  if (otp !== resetToken) {
+    alert("Invalid code");
+    return;
+  }
+  if (newPwd !== confirmPwd) {
+    alert("Passwords don't match");
+    return;
+  }
+  if (newPwd.length < 6) {
+    alert("Password must be 6+ characters");
+    return;
+  }
+  const email = document.getElementById("resetEmail").value;
+  const userIndex = UserDB.users.findIndex((u) => u.email === email);
+  if (userIndex !== -1) {
+    UserDB.users[userIndex].password = newPwd;
+    localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+    alert("Password reset successful! Please login.");
+    closeForgotModal();
+  }
+}
+function togglePasswordVisibility() {
+  const pwd = document.getElementById("loginPassword");
+  const icon = document.querySelector(".toggle-password i");
+  if (pwd.type === "password") {
+    pwd.type = "text";
+    icon.className = "fas fa-eye";
+  } else {
+    pwd.type = "password";
+    icon.className = "fas fa-eye-slash";
+  }
+}
 
-  // Set up maintenance tabs
-  document.querySelectorAll(".maint-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const tabId = tab.dataset.tab;
-      document
-        .querySelectorAll(".maint-tab")
-        .forEach((t) => t.classList.remove("active"));
-      document
-        .querySelectorAll(".maint-tab-content")
-        .forEach((c) => c.classList.remove("active"));
-      tab.classList.add("active");
-      const content = document.getElementById(
-        `tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`,
-      );
-      if (content) content.classList.add("active");
-    });
-  });
-
-  // Generation page upload button
-  const uploadBtn = document.getElementById("uploadCsvBtn");
-  if (uploadBtn) uploadBtn.onclick = () => manualGenSync();
-
-  console.log("All modules initialized successfully!");
-});
-
-// Expose global functions
+// Expose globals
+window.showPage = showPage;
+window.logout = logout;
 window.toggleSidebar = toggleSidebar;
 window.toggleTheme = toggleTheme;
 window.toggleNotif = toggleNotif;
-window.showPage = showPage;
-window.initWaterChart = initWaterChart;
-window.openShiftLogModal = openShiftLogModal;
-window.closeShiftLogModal = closeShiftLogModal;
-window.saveShiftLog = saveShiftLog;
-window.switchOpsTab = switchOpsTab;
 window.toggleInlinePostForm = toggleInlinePostForm;
 window.submitInlinePost = submitInlinePost;
-window.generateFeedReport = generateFeedReport;
-window.openPhotoViewer = openPhotoViewer;
-window.removeFeedPhoto = removeFeedPhoto;
-window.submitFeedComment = submitFeedComment;
-window.cancelFeedComment = cancelFeedComment;
-window.showAllComments = showAllComments;
 window.addMaintenanceTask = addMaintenanceTask;
-window.exportMaintenanceReport = exportMaintenanceReport;
-window.clearMaintenanceData = clearMaintenanceData;
-window.showEquipmentDetails = showEquipmentDetails;
-window.closeEquipModal = closeEquipModal;
-window.exportEquipmentData = exportEquipmentData;
-window.viewFaultDetails = viewFaultDetails;
-window.filterFaults = filterFaults;
-window.resetFaultFilters = resetFaultFilters;
-window.exportFaultsData = exportFaultsData;
-window.clearFaultsData = clearFaultsData;
-window.closeFaultModal = closeFaultModal;
-window.showAddFaultForm = showAddFaultForm;
 window.manualGenSync = manualGenSync;
-window.closeMobileSidebar = window.closeMobileSidebar;
+window.showAddUserModal = showAddUserModal;
+window.closeUserModal = closeUserModal;
+window.editUser = editUser;
+window.saveUser = saveUser;
+window.resetUserPassword = resetUserPassword;
+window.toggleUserStatus = toggleUserStatus;
+window.filterUsers = filterUsers;
+window.showForgotPassword = showForgotPassword;
+window.closeForgotModal = closeForgotModal;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.showAddFaultForm = showAddFaultForm;
 
-console.log("HydroPlant Manager - All modules loaded successfully!");
+// Live clock
+setInterval(() => {
+  const t = document.getElementById("live-time");
+  if (t) t.textContent = new Date().toLocaleString();
+}, 1000);
+// Add these to your existing global exports
+window.resendVerificationCode = resendVerificationCode;
+window.showForgotPassword = showForgotPassword;
+window.closeForgotModal = closeForgotModal;
+
+console.log("HydroPlant Manager - Ready!");
