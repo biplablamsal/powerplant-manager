@@ -7886,97 +7886,106 @@ function renderFeedCard(post) {
   const currentUser = getCurrentUserName();
   const isLiked = post.likes && post.likes.includes(currentUser);
 
-  const photosHtml =
-    post.photos && post.photos.length > 0
-      ? `
-        <div class="feed-post-photos">
-            ${post.photos
-              .map(
-                (photo) => `
-                <img src="${photo}" class="feed-post-photo" onclick="openPhotoViewer('${photo}')" alt="Post photo">
-            `,
-              )
-              .join("")}
+  // ========== FACEBOOK STYLE: BIG PHOTO FIRST, TEXT BELOW ==========
+  let photosHtml = "";
+  if (post.photos && post.photos.length > 0) {
+    if (post.photos.length === 1) {
+      // Single big photo
+      photosHtml = `
+        <div class="feed-post-photo-container" onclick="openPhotoViewer('${post.photos[0]}')">
+          <img src="${post.photos[0]}" class="feed-post-big-photo" alt="Maintenance photo">
         </div>
-    `
-      : "";
+      `;
+    } else {
+      // Multiple photos grid (2 cols)
+      let gridItems = "";
+      post.photos.forEach((photo) => {
+        gridItems += `<img src="${photo}" onclick="openPhotoViewer('${photo}')" alt="photo">`;
+      });
+      photosHtml = `<div class="feed-post-photo-grid">${gridItems}</div>`;
+    }
+  }
 
   const commentsHtml = renderCommentsSection(post.post_id, post.comments || []);
 
   return `
-        <div class="feed-post-card" data-post-id="${post.post_id}">
-            <div class="feed-post-header">
-                <div class="feed-post-avatar">${(post.author || "U").charAt(0).toUpperCase()}</div>
-                <div class="feed-post-author-info">
-                    <div class="feed-post-author">${escapeHtml(post.author || "Unknown")}</div>
-                    <div class="feed-post-time">${timeAgo}</div>
-                </div>
-                <div class="feed-post-badge ${post.post_type || "update"}">
-                    ${typeIcon} ${typeLabel}
-                </div>
-            </div>
-            <div class="feed-post-body">
-                ${post.title ? `<div class="feed-post-title">${escapeHtml(post.title)}</div>` : ""}
-                ${post.description ? `<div class="feed-post-description">${escapeHtml(post.description)}</div>` : ""}
-                ${photosHtml}
-                <div class="feed-post-meta">
-                    ${post.equipment ? `<span><i class="fas fa-microchip"></i> ${escapeHtml(post.equipment)}</span>` : ""}
-                    ${post.work_order_id ? `<span><i class="fas fa-clipboard-list"></i> ${escapeHtml(post.work_order_id)}</span>` : ""}
-                </div>
-                ${
-                  post.tags
-                    ? `<div class="feed-post-tags">${post.tags
-                        .split(",")
-                        .map(
-                          (tag) =>
-                            `<span class="feed-tag">#${tag.trim()}</span>`,
-                        )
-                        .join("")}</div>`
-                    : ""
-                }
-                <div class="feed-post-actions">
-                    <button class="feed-action-btn like-btn ${isLiked ? "liked" : ""}" data-action="like" data-post-id="${post.post_id}">
-                        <i class="fas fa-heart"></i> ${post.like_count || 0}
-                    </button>
-                    <button class="feed-action-btn comment-btn" data-action="comment" data-post-id="${post.post_id}">
-                        <i class="fas fa-comment"></i> Comment (${post.comments?.length || 0})
-                    </button>
-                </div>
-                ${commentsHtml}
-            </div>
+    <div class="feed-post-card" data-post-id="${post.post_id}">
+      <div class="feed-post-header">
+        <div class="feed-post-avatar">${(post.author || "U").charAt(0).toUpperCase()}</div>
+        <div class="feed-post-author-info">
+          <div class="feed-post-author">${escapeHtml(post.author || "Unknown")}</div>
+          <div class="feed-post-time">
+            <span>${timeAgo}</span>
+            <span>·</span>
+            <span class="feed-post-badge">${typeIcon} ${typeLabel}</span>
+          </div>
         </div>
-    `;
+      </div>
+
+      <!-- BIG PHOTO (if any) appears BEFORE text - Facebook style -->
+      ${photosHtml}
+
+      <!-- TEXT CONTENT BELOW PHOTO -->
+      <div class="feed-post-body">
+        ${post.title ? `<div class="feed-post-title">${escapeHtml(post.title)}</div>` : ""}
+        ${post.description ? `<div class="feed-post-description">${escapeHtml(post.description)}</div>` : ""}
+        
+        <div class="feed-post-meta">
+          ${post.equipment ? `<span><i class="fas fa-microchip"></i> ${escapeHtml(post.equipment)}</span>` : ""}
+          ${post.work_order_id ? `<span><i class="fas fa-clipboard-list"></i> ${escapeHtml(post.work_order_id)}</span>` : ""}
+        </div>
+        
+        ${
+          post.tags
+            ? `<div class="feed-post-tags">${post.tags
+                .split(",")
+                .map((tag) => `<span class="feed-tag">#${tag.trim()}</span>`)
+                .join("")}</div>`
+            : ""
+        }
+      </div>
+
+      <!-- ACTIONS (Like / Comment) -->
+      <div class="feed-post-actions">
+        <button class="feed-action-btn like-btn ${isLiked ? "liked" : ""}" data-action="like" data-post-id="${post.post_id}">
+          <i class="fas fa-heart"></i> ${post.like_count || 0}
+        </button>
+        <button class="feed-action-btn comment-btn" data-action="comment" data-post-id="${post.post_id}">
+          <i class="fas fa-comment"></i> Comment (${post.comments?.length || 0})
+        </button>
+      </div>
+
+      ${commentsHtml}
+    </div>
+  `;
 }
 
 // Render comments section
 function renderCommentsSection(postId, comments) {
   if (!comments || comments.length === 0) {
     return `<div class="feed-comments-section" id="comments-${postId}">
-                    <div class="feed-no-comments">No comments yet. Click Comment to add one.</div>
-                </div>`;
+              <div class="feed-no-comments" style="font-size:12px; color:var(--text-muted); padding:8px 0;">No comments yet.</div>
+            </div>`;
   }
-
   const visibleComments = comments.slice(0, 2);
   const hiddenCount = comments.length - 2;
-
   return `
-        <div class="feed-comments-section" id="comments-${postId}">
-            ${visibleComments
-              .map(
-                (comment) => `
-                <div class="feed-comment">
-                    <span class="feed-comment-author">${escapeHtml(comment.author)}:</span>
-                    <span class="feed-comment-text">${escapeHtml(comment.text)}</span>
-                    <span class="feed-comment-time">${formatTimeAgo(comment.timestamp)}</span>
-                </div>
-            `,
-              )
-              .join("")}
-            ${hiddenCount > 0 ? `<div class="view-more-comments" onclick="showAllComments('${postId}')">View all ${comments.length} comments</div>` : ""}
+    <div class="feed-comments-section" id="comments-${postId}">
+      ${visibleComments
+        .map(
+          (c) => `
+        <div class="feed-comment">
+          <span class="feed-comment-author">${escapeHtml(c.author)}:</span>
+          <span class="feed-comment-text">${escapeHtml(c.text)}</span>
+          <span class="feed-comment-time">${formatTimeAgo(c.timestamp)}</span>
         </div>
-    `;
+      `,
+        )
+        .join("")}
+      ${hiddenCount > 0 ? `<div class="view-more-comments" onclick="showAllComments('${postId}')">View all ${comments.length} comments</div>` : ""}
+    </div>
+  `;
 }
-
 // Show comment form
 function bindFeedActions() {
   if (FeedDB.actionsBound) return;
