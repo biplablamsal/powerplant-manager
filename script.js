@@ -420,8 +420,58 @@ function toggleNotif() {
 // ============================================
 
 // Google Apps Script Web App URL - UPDATE THIS AFTER DEPLOYMENT
-// const FEED_API_URL =
-//   "https://script.google.com/macros/s/AKfycbx1J8Hl7TUMfXXWZ_X9fKEgIr2kSmFm-zSgoifNxSdk7G2Xe7YifT7DCTeb1IVBYa0G/exec";
+const FEED_API_URL =
+  "https://script.google.com/macros/s/AKfycbz-t-EDVP_CebOz0LXR6KuurE3NtwzgV-vAXWzAceN-xSJA-3aB2-Q2uvqJPUfULFVG/exec";
+
+function isRemoteFeedEnabled() {
+  return typeof FEED_API_URL === "string" && FEED_API_URL.trim().length > 0;
+}
+
+async function fetchFeedApi(payload) {
+  if (!isRemoteFeedEnabled()) {
+    throw new Error("Remote feed API is not configured.");
+  }
+
+  const response = await fetch(FEED_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Feed API request failed with status ${response.status}`);
+  }
+
+  const result = await response.json();
+  if (!result || !result.success) {
+    throw new Error(result?.error || "Feed API returned an error.");
+  }
+
+  return result;
+}
+
+function getLocalFeedPosts() {
+  return JSON.parse(localStorage.getItem("maintenance_feed_posts") || "[]");
+}
+
+function setLocalFeedPosts(posts) {
+  localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts || []));
+}
+
+function findLocalFeedPost(postId) {
+  const posts = getLocalFeedPosts();
+  const post = posts.find((item) => String(item.id) === String(postId));
+  return { posts, post };
+}
+
+function generateLocalFeedPostId() {
+  const posts = getLocalFeedPosts();
+  const maxId = posts.reduce(
+    (max, item) => Math.max(max, Number(item.id) || 0),
+    0,
+  );
+  return String(maxId + 1);
+}
 
 // Current user for feed interactions
 let feedCurrentUser = null;
@@ -438,10 +488,22 @@ async function loadMaintenanceFeed() {
     if (loadingIndicator) loadingIndicator.style.display = "block";
     container.innerHTML = "";
 
-    // Load posts from localStorage instead of external API
-    let posts = JSON.parse(
-      localStorage.getItem("maintenance_feed_posts") || "[]",
-    );
+    let posts = [];
+    if (isRemoteFeedEnabled()) {
+      try {
+        const result = await fetchFeedApi({ action: "getPosts" });
+        posts = Array.isArray(result.posts) ? result.posts : [];
+        setLocalFeedPosts(posts);
+      } catch (error) {
+        console.warn(
+          "Remote feed load failed, falling back to local posts:",
+          error,
+        );
+        posts = getLocalFeedPosts();
+      }
+    } else {
+      posts = getLocalFeedPosts();
+    }
 
     // If no posts exist, use sample data
     if (posts.length === 0) {
@@ -774,21 +836,38 @@ async function toggleLike(postId) {
   const action = isLiked ? "unlikePost" : "likePost";
 
   try {
-    const response = await fetch(FEED_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    let result;
+    if (isRemoteFeedEnabled()) {
+      result = await fetchFeedApi({
         action: action,
         postId: postId,
         userId: feedCurrentUser.id,
         userName: feedCurrentUser.fullName,
-      }),
-    });
+      });
+    } else {
+      const localData = findLocalFeedPost(postId);
+      if (!localData.post) return;
+      const likes = localData.post.likes || [];
 
-    const result = await response.json();
+      if (action === "likePost") {
+        if (!likes.some((like) => like.userId === feedCurrentUser.id)) {
+          likes.push({
+            userId: feedCurrentUser.id,
+            userName: feedCurrentUser.fullName,
+          });
+        }
+      } else {
+        localData.post.likes = likes.filter(
+          (like) => like.userId !== feedCurrentUser.id,
+        );
+      }
+
+      localData.post.likes = likes;
+      setLocalFeedPosts(localData.posts);
+      result = { success: true, likes: localData.post.likes };
+    }
 
     if (result.success) {
-      // Update UI
       if (action === "likePost") {
         likeBtn?.classList.add("liked");
         likeBtn.innerHTML = '<i class="fas fa-heart"></i> Liked';
@@ -797,7 +876,6 @@ async function toggleLike(postId) {
         likeBtn.innerHTML = '<i class="far fa-heart"></i> Like';
       }
 
-      // Update like count
       const likeCountSpan = post?.querySelector(".like-count");
       if (likeCountSpan && result.likes) {
         const count = result.likes.length;
@@ -817,24 +895,37 @@ async function submitComment(postId) {
   if (!text || !feedCurrentUser) return;
 
   try {
-    const response = await fetch(FEED_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    let result;
+    if (isRemoteFeedEnabled()) {
+      result = await fetchFeedApi({
         action: "addComment",
         postId: postId,
         userId: feedCurrentUser.id,
         userName: feedCurrentUser.fullName,
         userAvatar: feedCurrentUser.fullName.charAt(0),
+        userRole: feedCurrentUser.role,
         text: text,
-      }),
-    });
-
-    const result = await response.json();
+      });
+    } else {
+      const localData = findLocalFeedPost(postId);
+      if (!localData.post) return;
+      const comment = {
+        id: String(Date.now()),
+        userId: feedCurrentUser.id,
+        userName: feedCurrentUser.fullName,
+        userAvatar: feedCurrentUser.fullName.charAt(0),
+        userRole: feedCurrentUser.role,
+        text: text,
+        timestamp: new Date().toISOString(),
+      };
+      localData.post.comments = localData.post.comments || [];
+      localData.post.comments.push(comment);
+      setLocalFeedPosts(localData.posts);
+      result = { success: true, allComments: localData.post.comments };
+    }
 
     if (result.success) {
       input.value = "";
-      // Refresh just this post's comments
       refreshPostComments(postId, result.allComments);
     }
   } catch (error) {
@@ -847,21 +938,26 @@ async function deleteComment(postId, commentId) {
   if (!confirm("Delete this comment?")) return;
 
   try {
-    const response = await fetch(FEED_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    let result;
+    if (isRemoteFeedEnabled()) {
+      result = await fetchFeedApi({
         action: "deleteComment",
         postId: postId,
         commentId: commentId,
         userId: feedCurrentUser.id,
-      }),
-    });
-
-    const result = await response.json();
+      });
+    } else {
+      const localData = findLocalFeedPost(postId);
+      if (!localData.post) return;
+      localData.post.comments = (localData.post.comments || []).filter(
+        (comment) => String(comment.id) !== String(commentId),
+      );
+      setLocalFeedPosts(localData.posts);
+      result = { success: true, comments: localData.post.comments };
+    }
 
     if (result.success) {
-      refreshPostComments(postId, result.comments);
+      refreshPostComments(postId, result.comments || result.allComments);
     }
   } catch (error) {
     console.error("Error deleting comment:", error);
@@ -958,10 +1054,9 @@ async function submitInlinePost() {
   const photos = await Promise.all(photoPromises);
 
   try {
-    const response = await fetch(FEED_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    let result;
+    if (isRemoteFeedEnabled()) {
+      result = await fetchFeedApi({
         action: "createPost",
         author: feedCurrentUser?.fullName || "Unknown",
         authorRole: feedCurrentUser?.role || "operator",
@@ -973,13 +1068,37 @@ async function submitInlinePost() {
         workOrder: workOrder,
         tags: tags,
         photos: photos,
-      }),
-    });
-
-    const result = await response.json();
+      });
+    } else {
+      const posts = getLocalFeedPosts();
+      const newPost = {
+        id: generateLocalFeedPostId(),
+        userId: feedCurrentUser?.id || `user_${Date.now()}`,
+        author: feedCurrentUser?.fullName || "Unknown",
+        authorRole: feedCurrentUser?.role || "operator",
+        authorAvatar: feedCurrentUser?.fullName?.charAt(0) || "U",
+        timestamp: new Date().toISOString(),
+        title: title,
+        description: description,
+        equipment: equipment,
+        workOrder: workOrder,
+        type: type,
+        tags: tags
+          ? tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean)
+          : [],
+        photos: photos,
+        likes: [],
+        comments: [],
+      };
+      posts.unshift(newPost);
+      setLocalFeedPosts(posts);
+      result = { success: true };
+    }
 
     if (result.success) {
-      // Clear form
       document.getElementById("inlinePostTitle").value = "";
       document.getElementById("inlinePostDesc").value = "";
       document.getElementById("inlinePostEquipment").value = "";
@@ -988,11 +1107,9 @@ async function submitInlinePost() {
       document.getElementById("photoPreviewContainer").innerHTML = "";
       pendingPhotos = [];
 
-      // Close form and refresh feed
       toggleInlinePostForm();
       loadMaintenanceFeed();
 
-      // Show success message
       showToast("Post created successfully!", "success");
     } else {
       throw new Error(result.error);
