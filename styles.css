@@ -4003,3 +4003,812 @@ select.form-control {
     letter-spacing: 4px;
   }
 }
+
+/* ============================================
+   MOBILE OPTIMIZATION FOR LOGIN PAGE
+   ============================================ */
+
+/* Mobile First Login Page */
+@media (max-width: 768px) {
+  .login-page {
+    padding: 16px;
+    background: linear-gradient(135deg, #0a0e1a 0%, #111827 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  /* Hide brand section on mobile for more space */
+  .login-brand {
+    display: none;
+  }
+
+  .login-card {
+    width: 100%;
+    padding: 24px 20px 32px;
+    border-radius: 28px;
+    background: var(--bg-card);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    margin: 0;
+  }
+
+  .login-header {
+    margin-bottom: 28px;
+  }
+
+  .login-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .login-header p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* Form inputs - make them larger for touch */
+  .login-form .input-group {
+    margin-bottom: 18px;
+  }
+
+  .login-form .input-group input {
+    padding: 16px 16px 16px 46px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 14px;
+    background: var(--bg-raised);
+  }
+
+  .login-form .input-group i {
+    left: 16px;
+    font-size: 16px;
+  }
+
+  .toggle-password {
+    right: 16px;
+  }
+
+  .toggle-password i {
+    font-size: 18px;
+  }
+
+  /* Options row */
+  .login-options {
+    margin-bottom: 28px;
+    font-size: 14px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .checkbox-label {
+    font-size: 14px;
+  }
+
+  .checkbox-label input {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+  }
+
+  .forgot-link {
+    font-size: 14px;
+  }
+
+  /* Login button */
+  .login-btn {
+    padding: 16px;
+    font-size: 17px;
+    border-radius: 14px;
+    margin-bottom: 24px;
+  }
+
+  .login-btn i {
+    font-size: 18px;
+  }
+
+  /* Footer */
+  .login-footer {
+    font-size: 12px;
+    padding-top: 20px;
+    margin-top: 0;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  /* Modal for mobile */
+  .modal-content {
+    width: 92%;
+    margin: 16px;
+    border-radius: 24px;
+    max-height: 85vh;
+  }
+
+  .modal-header {
+    padding: 18px 20px;
+  }
+
+  .modal-header h3 {
+    font-size: 18px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    padding: 16px 20px;
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .modal-footer button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+  }
+
+  /* Email simulation modal for mobile */
+  .email-sim-content {
+    width: 92%;
+    margin: 16px;
+    border-radius: 24px;
+  }
+
+  .email-sim-header {
+    padding: 18px 20px;
+  }
+
+  .email-sim-header h3 {
+    font-size: 16px;
+  }
+
+  .email-sim-body {
+    padding: 20px;
+  }
+
+  .verification-code {
+    font-size: 28px;
+    letter-spacing: 6px;
+    padding: 16px;
+  }
+
+  /* Input groups in modal */
+  .modal .input-group input {
+    padding: 14px 14px 14px 44px;
+    font-size: 16px;
+  }
+
+  /* Reset timer */
+  #resetTimer {
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+/* Extra small devices (phones under 400px) */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 20px 16px 28px;
+  }
+
+  .login-header h2 {
+    font-size: 24px;
+  }
+
+  .login-header p {
+    font-size: 13px;
+  }
+
+  .login-form .input-group input {
+    padding: 14px 14px 14px 44px;
+    font-size: 15px;
+  }
+
+  .login-btn {
+    padding: 14px;
+    font-size: 16px;
+  }
+
+  .verification-code {
+    font-size: 24px;
+    letter-spacing: 4px;
+  }
+}
+
+/* Fix for iOS zoom on input focus */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area for notched phones */
+@supports (padding: max(0px)) {
+  .login-page {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+/* Mobile brand logo - visible only on mobile */
+.mobile-brand {
+  display: none;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mobile-brand-icon {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 32px;
+}
+
+.mobile-brand-icon i:first-child {
+  position: relative;
+  left: -4px;
+}
+
+.mobile-brand-icon i:last-child {
+  position: relative;
+  left: 4px;
+}
+
+.mobile-brand h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.mobile-brand h1 span {
+  color: var(--accent-teal);
+}
+
+@media (max-width: 768px) {
+  .mobile-brand {
+    display: block;
+  }
+}
+
+/* ============================================
+   ENHANCED FEED STYLES - Instagram Style
+   ============================================ */
+
+/* Photo Upload Area */
+.photo-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-raised);
+}
+
+.photo-upload-area:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-hover);
+}
+
+.photo-upload-area i {
+  font-size: 32px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.photo-upload-area span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.photo-preview-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.feed-photo-preview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+.feed-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.feed-photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Post Type Selector */
+.post-type-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.post-type-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.post-type-btn.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+}
+
+/* Feed Post Card */
+.feed-post-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.feed-post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Post Header */
+.feed-post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.feed-post-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.feed-post-author-info {
+  flex: 1;
+}
+
+.feed-post-author {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.feed-post-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.feed-post-badge {
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.feed-post-badge.update {
+  background: rgba(74, 157, 232, 0.15);
+  color: #4a9de8;
+}
+.feed-post-badge.issue {
+  background: rgba(226, 75, 74, 0.15);
+  color: #e24b4a;
+}
+.feed-post-badge.complete {
+  background: rgba(41, 196, 143, 0.15);
+  color: #29c48f;
+}
+.feed-post-badge.inspection {
+  background: rgba(245, 174, 58, 0.15);
+  color: #f5ae3a;
+}
+
+/* Post Photos Grid */
+.feed-post-photos {
+  display: grid;
+  gap: 2px;
+  background: #0a0e1a;
+}
+
+.feed-post-photos.one-photo {
+  grid-template-columns: 1fr;
+}
+
+.feed-post-photos.two-photos {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.feed-post-photos.three-photos,
+.feed-post-photos.four-photos {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.feed-post-photos .photo-item {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  cursor: pointer;
+  background: #0a0e1a;
+  position: relative;
+}
+
+.feed-post-photos .photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.feed-post-photos .photo-item:hover img {
+  transform: scale(1.05);
+}
+
+/* Post Caption */
+.feed-post-caption {
+  padding: 12px 16px;
+}
+
+.caption-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.caption-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.caption-equipment {
+  font-size: 12px;
+  color: var(--accent-blue);
+  margin-bottom: 6px;
+}
+
+.caption-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.caption-tag {
+  font-size: 11px;
+  color: var(--accent-teal);
+}
+
+/* Post Stats */
+.feed-post-stats {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.like-count {
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Post Actions */
+.feed-post-actions {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.feed-action-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feed-action-btn:hover {
+  background: var(--bg-hover);
+}
+
+.feed-action-btn.liked {
+  color: #ef4444;
+}
+
+.feed-action-btn.liked i {
+  animation: heartBeat 0.3s ease;
+}
+
+@keyframes heartBeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Comments Section */
+.feed-comments-section {
+  padding: 0 16px 12px 16px;
+}
+
+.feed-comment {
+  padding: 10px 0;
+  font-size: 13px;
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.feed-comment:last-child {
+  border-bottom: none;
+}
+
+.feed-comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.feed-comment-content {
+  flex: 1;
+}
+
+.feed-comment-author {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.feed-comment-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.feed-comment-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.delete-comment-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.delete-comment-btn:hover {
+  color: var(--status-stopped);
+  background: var(--bg-hover);
+}
+
+.view-more-comments {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.view-more-comments:hover {
+  color: var(--accent-blue);
+}
+
+/* Comment Input */
+.feed-comment-form {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.comment-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.comment-submit-btn {
+  background: none;
+  border: none;
+  color: var(--accent-blue);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.comment-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.feed-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  color: var(--text-muted);
+}
+
+/* Loading Indicator */
+.feed-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+/* Photo Viewer Modal */
+.photo-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.photo-viewer-content {
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.photo-viewer-content img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.photo-viewer-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* New Post Actions */
+.new-post-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .feed-posts-container {
+    max-width: 100%;
+  }
+
+  .feed-action-btn {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .post-type-selector {
+    gap: 6px;
+  }
+
+  .post-type-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}

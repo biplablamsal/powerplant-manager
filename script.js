@@ -207,6 +207,8 @@ function showMainApp() {
 
   // Show dashboard
   showPage("dashboard");
+  initMobileSidebar();
+  initNavHandlers();
 }
 
 // Login handler
@@ -341,32 +343,748 @@ function toggleTheme() {
   );
   initDashboardCharts();
 }
+
 function toggleSidebar() {
-  document.getElementById("sidebar")?.classList.toggle("collapsed");
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+  if (window.innerWidth <= 768) {
+    if (typeof window.toggleMobileSidebar === "function") {
+      window.toggleMobileSidebar();
+      return;
+    }
+  }
+  sidebar.classList.toggle("collapsed");
 }
+
+function initNavHandlers() {
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    if (item.dataset.navInit === "true") return;
+    item.dataset.navInit = "true";
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pageId = item.dataset.page;
+      if (pageId) showPage(pageId);
+      if (
+        window.innerWidth <= 768 &&
+        typeof window.closeMobileSidebar === "function"
+      ) {
+        setTimeout(window.closeMobileSidebar, 100);
+      }
+    });
+  });
+}
+
+function initMobileSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+  let overlay = document.querySelector(".sidebar-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "sidebar-overlay";
+    document.body.appendChild(overlay);
+  }
+
+  window.toggleMobileSidebar = function () {
+    if (window.innerWidth > 768) return;
+    if (sidebar.classList.contains("open")) {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("active");
+      document.body.style.overflow = "";
+    } else {
+      sidebar.classList.add("open");
+      overlay.classList.add("active");
+      document.body.style.overflow = "hidden";
+    }
+  };
+
+  window.closeMobileSidebar = function () {
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+    document.body.style.overflow = "";
+  };
+
+  overlay.onclick = window.closeMobileSidebar;
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 768 && sidebar.classList.contains("open")) {
+      window.closeMobileSidebar();
+    }
+  });
+}
+
 function toggleNotif() {
   document.getElementById("notifPanel")?.classList.toggle("open");
 }
 
-// Maintenance Feed
-function loadMaintenanceFeed() {
+// ============================================
+// ENHANCED FEED SYSTEM - Instagram Style
+// ============================================
+
+// Google Apps Script Web App URL - UPDATE THIS AFTER DEPLOYMENT
+// const FEED_API_URL =
+//   "https://script.google.com/macros/s/AKfycbx1J8Hl7TUMfXXWZ_X9fKEgIr2kSmFm-zSgoifNxSdk7G2Xe7YifT7DCTeb1IVBYa0G/exec";
+
+// Current user for feed interactions
+let feedCurrentUser = null;
+let pendingPhotos = [];
+
+// Load feed posts from localStorage
+async function loadMaintenanceFeed() {
   const container = document.getElementById("feedPosts");
+  const loadingIndicator = document.getElementById("feedLoadingIndicator");
+
   if (!container) return;
-  let posts = JSON.parse(
-    localStorage.getItem("maintenance_feed_posts") || "[]",
+
+  try {
+    if (loadingIndicator) loadingIndicator.style.display = "block";
+    container.innerHTML = "";
+
+    // Load posts from localStorage instead of external API
+    let posts = JSON.parse(localStorage.getItem("maintenance_feed_posts") || "[]");
+
+    // If no posts exist, use sample data
+    if (posts.length === 0) {
+      posts = [
+        {
+          id: 1,
+          userId: "user1",
+          userName: "Rajesh Kumar",
+          userRole: "Plant Incharge",
+          avatar: "RK",
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          title: "Unit 2 Generator Bearing Replacement Completed",
+          description: "Successfully replaced the upper guide bearing on Unit 2. Bearing temperature now within optimal range.",
+          equipment: "Unit 2 Generator",
+          type: "complete",
+          tags: ["bearing", "unit2", "maintenance"],
+          likes: [],
+          comments: [],
+          photos: []
+        },
+        {
+          id: 2,
+          userId: "user2",
+          userName: "Prakash Thapa",
+          userRole: "Technician",
+          avatar: "PT",
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          title: "Unit 3 Governor Quarterly Service Due",
+          description: "Reminder: Unit 3 Governor quarterly service is due this week. Pre-inspection checklist completed.",
+          equipment: "Unit 3 Governor",
+          type: "update",
+          tags: ["governor", "unit3", "urgent"],
+          likes: [],
+          comments: [],
+          photos: []
+        },
+        {
+          id: 3,
+          userId: "user3",
+          userName: "Nirmala Sharma",
+          userRole: "Technician",
+          avatar: "NS",
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          title: "Water Intake Gate Valve Inspection",
+          description: "Completed weekly inspection of intake gate valves. All readings nominal, no issues detected.",
+          equipment: "Water Intake",
+          type: "inspection",
+          tags: ["intake", "inspection", "water"],
+          likes: [],
+          comments: [],
+          photos: []
+        }
+      ];
+      localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts));
+    }
+
+    const result = { success: true, posts };
+
+    if (!result.success) {
+      throw new Error(result.error || "Failed to load posts");
+    }
+
+    if (posts.length === 0) {
+      container.innerHTML = `
+        <div class="feed-empty-state">
+          <i class="fas fa-instagram" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px; display: block;"></i>
+          <h3>No posts yet</h3>
+          <p>Be the first to share a maintenance update!</p>
+          <button class="btn btn-primary" style="margin-top: 16px;" onclick="toggleInlinePostForm()">
+            <i class="fas fa-plus-circle"></i> Create Post
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    // Render each post
+    posts.forEach((post) => {
+      const postElement = createFeedPostElement(post);
+      container.appendChild(postElement);
+    });
+  } catch (error) {
+    console.error("Error loading feed:", error);
+    container.innerHTML = `
+      <div class="feed-empty-state">
+        <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px; display: block;"></i>
+        <h3>Error Loading Feed</h3>
+        <p>${error.message}</p>
+        <button class="btn btn-primary" style="margin-top: 16px;" onclick="loadMaintenanceFeed()">
+          <i class="fas fa-sync-alt"></i> Try Again
+        </button>
+      </div>
+    `;
+  } finally {
+    if (loadingIndicator) loadingIndicator.style.display = "none";
+  }
+}
+
+// Create DOM element for a single feed post
+function createFeedPostElement(post) {
+  const postDiv = document.createElement("div");
+  postDiv.className = "feed-post-card";
+  postDiv.dataset.postId = post.id;
+
+  const likes = post.likes || [];
+  const comments = post.comments || [];
+  const photos = post.photos || [];
+  const isLiked = likes.some((like) => like.userId === feedCurrentUser?.id);
+
+  // Header
+  const header = `
+    <div class="feed-post-header">
+      <div class="feed-post-avatar" style="background: ${getAvatarColorByRole(post.authorRole)}">
+        ${post.authorAvatar || post.author.charAt(0)}
+      </div>
+      <div class="feed-post-author-info">
+        <div class="feed-post-author">${escapeHtml(post.author)}</div>
+        <div class="feed-post-time">
+          ${formatTimeAgo(post.timestamp)}
+          <span class="feed-post-badge ${post.type || "update"}">${getPostTypeLabel(post.type)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Photos grid
+  let photosHtml = "";
+  if (photos.length > 0) {
+    let gridClass = "one-photo";
+    if (photos.length === 2) gridClass = "two-photos";
+    if (photos.length >= 3) gridClass = "three-photos";
+
+    photosHtml = `
+      <div class="feed-post-photos ${gridClass}">
+        ${photos
+          .map(
+            (photo, idx) => `
+          <div class="photo-item" onclick="viewPhoto('${photo}', ${idx})">
+            <img src="${photo}" alt="Post photo" loading="lazy" />
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  // Caption
+  const caption = `
+    <div class="feed-post-caption">
+      ${post.title ? `<div class="caption-title">${escapeHtml(post.title)}</div>` : ""}
+      ${post.equipment ? `<div class="caption-equipment"><i class="fas fa-microchip"></i> ${escapeHtml(post.equipment)}</div>` : ""}
+      <div class="caption-text">${escapeHtml(post.description || "")}</div>
+      ${
+        post.tags
+          ? `
+        <div class="caption-tags">
+          ${post.tags
+            .split(",")
+            .map((tag) => `<span class="caption-tag">#${tag.trim()}</span>`)
+            .join("")}
+        </div>
+      `
+          : ""
+      }
+    </div>
+  `;
+
+  // Stats (likes count)
+  const stats = `
+    <div class="feed-post-stats">
+      <span class="like-count" onclick="toggleLikeUsersModal('${post.id}')">
+        ${likes.length} ${likes.length === 1 ? "like" : "likes"}
+      </span>
+    </div>
+  `;
+
+  // Action buttons
+  const actions = `
+    <div class="feed-post-actions">
+      <button class="feed-action-btn ${isLiked ? "liked" : ""}" onclick="toggleLike('${post.id}')">
+        <i class="fas ${isLiked ? "fa-heart" : "fa-heart"}"></i> ${isLiked ? "Liked" : "Like"}
+      </button>
+      <button class="feed-action-btn" onclick="focusCommentInput('${post.id}')">
+        <i class="far fa-comment"></i> Comment
+      </button>
+    </div>
+  `;
+
+  // Comments section
+  let commentsHtml = "";
+  const visibleComments = comments.slice(0, 2);
+  const hasMoreComments = comments.length > 2;
+
+  if (comments.length > 0) {
+    commentsHtml = `
+      <div class="feed-comments-section" id="comments-${post.id}">
+        ${visibleComments
+          .map(
+            (comment) => `
+          <div class="feed-comment" data-comment-id="${comment.id}">
+            <div class="feed-comment-avatar" style="background: ${getAvatarColorByRole(comment.userRole)}">
+              ${comment.userAvatar || comment.userName.charAt(0)}
+            </div>
+            <div class="feed-comment-content">
+              <div class="feed-comment-author">${escapeHtml(comment.userName)}</div>
+              <div class="feed-comment-text">${escapeHtml(comment.text)}</div>
+              <div class="feed-comment-time">${formatTimeAgo(comment.timestamp)}</div>
+            </div>
+            ${
+              comment.userId === feedCurrentUser?.id ||
+              feedCurrentUser?.role === "super_admin"
+                ? `
+              <button class="delete-comment-btn" onclick="deleteComment('${post.id}', '${comment.id}')">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            `
+                : ""
+            }
+          </div>
+        `,
+          )
+          .join("")}
+        ${
+          hasMoreComments
+            ? `
+          <div class="view-more-comments" onclick="loadAllComments('${post.id}')">
+            View all ${comments.length} comments
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  // Comment input
+  const commentInput = `
+    <div class="feed-comment-form">
+      <input type="text" class="comment-input" id="comment-input-${post.id}" placeholder="Add a comment..." maxlength="500" />
+      <button class="comment-submit-btn" onclick="submitComment('${post.id}')">Post</button>
+    </div>
+  `;
+
+  postDiv.innerHTML =
+    header +
+    photosHtml +
+    caption +
+    stats +
+    actions +
+    commentsHtml +
+    commentInput;
+
+  return postDiv;
+}
+
+// Helper Functions
+function getAvatarColorByRole(role) {
+  const colors = {
+    super_admin: "#e24b4a",
+    plant_incharge: "#4a9de8",
+    headworks_incharge: "#29c48f",
+    operator: "#f5ae3a",
+    viewer: "#9f7aea",
+  };
+  return colors[role] || "#576170";
+}
+
+function getPostTypeLabel(type) {
+  const labels = {
+    update: "🔧 Update",
+    issue: "⚠️ Issue",
+    complete: "✅ Complete",
+    inspection: "🔍 Inspection",
+  };
+  return labels[type] || "📝 Post";
+}
+
+function formatTimeAgo(timestamp) {
+  const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
+
+  const intervals = {
+    year: 31536000,
+    month: 2592000,
+    week: 604800,
+    day: 86400,
+    hour: 3600,
+    minute: 60,
+  };
+
+  for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+    const interval = Math.floor(seconds / secondsInUnit);
+    if (interval >= 1) {
+      return `${interval} ${unit}${interval === 1 ? "" : "s"} ago`;
+    }
+  }
+  return "just now";
+}
+
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Like functionality
+async function toggleLike(postId) {
+  if (!feedCurrentUser) return;
+
+  const post = document.querySelector(
+    `.feed-post-card[data-post-id="${postId}"]`,
   );
-  if (posts.length === 0) {
-    container.innerHTML =
-      '<div class="feed-empty-state">No posts yet. Click "New Post" to share updates.</div>';
+  const likeBtn = post?.querySelector(".feed-action-btn");
+  const isLiked = likeBtn?.classList.contains("liked");
+
+  const action = isLiked ? "unlikePost" : "likePost";
+
+  try {
+    const response = await fetch(FEED_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: action,
+        postId: postId,
+        userId: feedCurrentUser.id,
+        userName: feedCurrentUser.fullName,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Update UI
+      if (action === "likePost") {
+        likeBtn?.classList.add("liked");
+        likeBtn.innerHTML = '<i class="fas fa-heart"></i> Liked';
+      } else {
+        likeBtn?.classList.remove("liked");
+        likeBtn.innerHTML = '<i class="far fa-heart"></i> Like';
+      }
+
+      // Update like count
+      const likeCountSpan = post?.querySelector(".like-count");
+      if (likeCountSpan && result.likes) {
+        const count = result.likes.length;
+        likeCountSpan.textContent = `${count} ${count === 1 ? "like" : "likes"}`;
+      }
+    }
+  } catch (error) {
+    console.error("Error toggling like:", error);
+  }
+}
+
+// Submit comment
+async function submitComment(postId) {
+  const input = document.getElementById(`comment-input-${postId}`);
+  const text = input?.value.trim();
+
+  if (!text || !feedCurrentUser) return;
+
+  try {
+    const response = await fetch(FEED_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "addComment",
+        postId: postId,
+        userId: feedCurrentUser.id,
+        userName: feedCurrentUser.fullName,
+        userAvatar: feedCurrentUser.fullName.charAt(0),
+        text: text,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      input.value = "";
+      // Refresh just this post's comments
+      refreshPostComments(postId, result.allComments);
+    }
+  } catch (error) {
+    console.error("Error submitting comment:", error);
+  }
+}
+
+// Delete comment
+async function deleteComment(postId, commentId) {
+  if (!confirm("Delete this comment?")) return;
+
+  try {
+    const response = await fetch(FEED_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "deleteComment",
+        postId: postId,
+        commentId: commentId,
+        userId: feedCurrentUser.id,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      refreshPostComments(postId, result.comments);
+    }
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+  }
+}
+
+// Refresh comments for a post
+function refreshPostComments(postId, comments) {
+  const commentsSection = document.getElementById(`comments-${postId}`);
+  if (!commentsSection) return;
+
+  const visibleComments = comments.slice(0, 2);
+  const hasMoreComments = comments.length > 2;
+
+  commentsSection.innerHTML = `
+    ${visibleComments
+      .map(
+        (comment) => `
+      <div class="feed-comment" data-comment-id="${comment.id}">
+        <div class="feed-comment-avatar" style="background: ${getAvatarColorByRole(comment.userRole)}">
+          ${comment.userAvatar || comment.userName.charAt(0)}
+        </div>
+        <div class="feed-comment-content">
+          <div class="feed-comment-author">${escapeHtml(comment.userName)}</div>
+          <div class="feed-comment-text">${escapeHtml(comment.text)}</div>
+          <div class="feed-comment-time">${formatTimeAgo(comment.timestamp)}</div>
+        </div>
+        ${
+          comment.userId === feedCurrentUser?.id ||
+          feedCurrentUser?.role === "super_admin"
+            ? `
+          <button class="delete-comment-btn" onclick="deleteComment('${postId}', '${comment.id}')">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        `
+            : ""
+        }
+      </div>
+    `,
+      )
+      .join("")}
+    ${
+      hasMoreComments
+        ? `
+      <div class="view-more-comments" onclick="loadAllComments('${postId}')">
+        View all ${comments.length} comments
+      </div>
+    `
+        : ""
+    }
+  `;
+}
+
+// Load all comments in a modal
+function loadAllComments(postId) {
+  const post = document.querySelector(
+    `.feed-post-card[data-post-id="${postId}"]`,
+  );
+  // This would open a modal showing all comments
+  alert("All comments feature - would show modal with full comment list");
+}
+
+// Focus comment input
+function focusCommentInput(postId) {
+  const input = document.getElementById(`comment-input-${postId}`);
+  if (input) input.focus();
+}
+
+// Create new post
+async function submitInlinePost() {
+  const title = document.getElementById("inlinePostTitle")?.value || "";
+  const description = document.getElementById("inlinePostDesc")?.value || "";
+  const equipment = document.getElementById("inlinePostEquipment")?.value || "";
+  const workOrder = document.getElementById("inlinePostWorkOrder")?.value || "";
+  const tags = document.getElementById("inlinePostTags")?.value || "";
+
+  const activeTypeBtn = document.querySelector(".post-type-btn.active");
+  const type = activeTypeBtn?.dataset.type || "update";
+
+  if (!description && !title) {
+    alert("Please enter a description or title");
     return;
   }
-  container.innerHTML = posts
+
+  // Convert photos to base64
+  const photoPromises = pendingPhotos.map((file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  });
+
+  const photos = await Promise.all(photoPromises);
+
+  try {
+    const response = await fetch(FEED_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "createPost",
+        author: feedCurrentUser?.fullName || "Unknown",
+        authorRole: feedCurrentUser?.role || "operator",
+        authorAvatar: feedCurrentUser?.fullName?.charAt(0) || "U",
+        title: title,
+        description: description,
+        type: type,
+        equipment: equipment,
+        workOrder: workOrder,
+        tags: tags,
+        photos: photos,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Clear form
+      document.getElementById("inlinePostTitle").value = "";
+      document.getElementById("inlinePostDesc").value = "";
+      document.getElementById("inlinePostEquipment").value = "";
+      document.getElementById("inlinePostWorkOrder").value = "";
+      document.getElementById("inlinePostTags").value = "";
+      document.getElementById("photoPreviewContainer").innerHTML = "";
+      pendingPhotos = [];
+
+      // Close form and refresh feed
+      toggleInlinePostForm();
+      loadMaintenanceFeed();
+
+      // Show success message
+      showToast("Post created successfully!", "success");
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error("Error creating post:", error);
+    alert("Error creating post: " + error.message);
+  }
+}
+
+// Photo preview function
+function previewFeedPhotos(input) {
+  const previewContainer = document.getElementById("photoPreviewContainer");
+  if (!previewContainer) return;
+
+  pendingPhotos = [...pendingPhotos, ...Array.from(input.files)];
+
+  previewContainer.innerHTML = pendingPhotos
     .map(
-      (post) =>
-        `<div class="feed-post-card"><div class="feed-post-header"><div class="feed-post-avatar">${(post.author || "U")[0]}</div><div class="feed-post-author-info"><div class="feed-post-author">${post.author || "Unknown"}</div><div class="feed-post-time">${new Date(post.timestamp).toLocaleString()}</div></div></div><div class="feed-post-caption"><div class="caption-text"><strong>${post.title || ""}</strong> ${post.description || ""}</div></div></div>`,
+      (file, idx) => `
+    <div class="feed-photo-preview">
+      <img src="${URL.createObjectURL(file)}" alt="Preview" />
+      <button class="feed-photo-remove" onclick="removePendingPhoto(${idx})">×</button>
+    </div>
+  `,
     )
     .join("");
+
+  input.value = "";
 }
+
+function removePendingPhoto(index) {
+  pendingPhotos.splice(index, 1);
+  previewFeedPhotos({ files: [] }); // Refresh preview
+}
+
+// View photo fullscreen
+function viewPhoto(photoUrl, index) {
+  const modal = document.createElement("div");
+  modal.className = "photo-viewer-overlay";
+  modal.onclick = () => modal.remove();
+  modal.innerHTML = `
+    <div class="photo-viewer-content" onclick="event.stopPropagation()">
+      <img src="${photoUrl}" alt="Full size" />
+    </div>
+    <button class="photo-viewer-close" onclick="this.closest('.photo-viewer-overlay').remove()">×</button>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Toast notification
+function showToast(message, type = "info") {
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <i class="fas ${type === "success" ? "fa-check-circle" : "fa-info-circle"}"></i>
+    <span>${message}</span>
+  `;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg-card);
+    border-left: 4px solid ${type === "success" ? "#29c48f" : "#4a9de8"};
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    animation: slideInRight 0.3s ease;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Set current user from logged-in user
+function setFeedCurrentUser() {
+  feedCurrentUser = UserDB.currentUser;
+}
+
+// Initialize feed when page loads
+function initFeed() {
+  setFeedCurrentUser();
+  loadMaintenanceFeed();
+}
+
+// Call this when showing feed page
+// Override the existing showPage function to load feed when feed page is shown
+const originalShowPage = window.showPage;
+window.showPage = function (pageId) {
+  if (originalShowPage) originalShowPage(pageId);
+  if (pageId === "feed") {
+    initFeed();
+  }
+};
+
+// Add CSS for toast animation
+const toastStyle = document.createElement("style");
+toastStyle.textContent = `
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+`;
+document.head.appendChild(toastStyle);
 
 function toggleInlinePostForm() {
   const f = document.getElementById("inlinePostForm");
@@ -777,6 +1495,21 @@ function resendVerificationCode() {
   // Restart timer
   startCountdown(600);
 }
+
+function resetUserPassword(id) {
+  const user = UserDB.users.find((u) => u.id === id);
+  if (!user) {
+    alert("User not found");
+    return;
+  }
+
+  const newPassword = Math.random().toString(36).slice(-8) + "A1";
+  user.password = newPassword;
+  localStorage.setItem("hydroplant_users", JSON.stringify(UserDB.users));
+  alert(`Password for ${user.fullName} has been reset to: ${newPassword}`);
+  renderUserManagement();
+}
+
 function toggleUserStatus(id) {
   const u = UserDB.users.find((u) => u.id === id);
   if (u) {

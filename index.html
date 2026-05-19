@@ -22,20 +22,17 @@
   </head>
   <body>
     <!-- ============================================ -->
-    <!-- LOGIN PAGE - SHOWN FIRST (Like Facebook) -->
-    <!-- ============================================ -->
-    <!-- ============================================ -->
-    <!-- LOGIN PAGE - SHOWN FIRST (Like Facebook) -->
+    <!-- LOGIN PAGE - MOBILE OPTIMIZED -->
     <!-- ============================================ -->
     <div class="login-page" id="loginPage">
       <div class="login-container">
-        <div class="login-brand">
-          <div class="brand-icon">
+        <!-- Mobile logo (visible only on mobile) -->
+        <div class="mobile-brand">
+          <div class="mobile-brand-icon">
             <i class="fas fa-water"></i>
             <i class="fas fa-bolt"></i>
           </div>
           <h1>HydroPlant<span>Manager</span></h1>
-          <p>Seti Nadi Hydropower Plant • Nepal</p>
         </div>
 
         <div class="login-card">
@@ -557,7 +554,7 @@
           </div>
         </div>
 
-        <!-- PAGE: MAINTENANCE FEED -->
+        <!-- PAGE: MAINTENANCE FEED - Instagram Style -->
         <div class="page-content page" id="page-feed">
           <div class="page-header">
             <div>
@@ -575,6 +572,8 @@
               </button>
             </div>
           </div>
+
+          <!-- New Post Form -->
           <div
             class="inline-post-form"
             id="inlinePostForm"
@@ -590,12 +589,15 @@
               <div class="card-body">
                 <div class="post-type-selector">
                   <button class="post-type-btn active" data-type="update">
-                    🔧 Task Update</button
-                  ><button class="post-type-btn" data-type="issue">
-                    ⚠️ Issue</button
-                  ><button class="post-type-btn" data-type="complete">
-                    ✅ Complete</button
-                  ><button class="post-type-btn" data-type="inspection">
+                    🔧 Update
+                  </button>
+                  <button class="post-type-btn" data-type="issue">
+                    ⚠️ Issue
+                  </button>
+                  <button class="post-type-btn" data-type="complete">
+                    ✅ Complete
+                  </button>
+                  <button class="post-type-btn" data-type="inspection">
                     🔍 Inspection
                   </button>
                 </div>
@@ -620,8 +622,13 @@
                     <option value="">Select Equipment</option>
                     <option>Unit 1 Generator</option>
                     <option>Unit 2 Generator</option>
-                    <option>Unit 3 Generator</option></select
-                  ><input
+                    <option>Unit 3 Generator</option>
+                    <option>Turbine 1</option>
+                    <option>Turbine 2</option>
+                    <option>Governor System</option>
+                    <option>Control Panel</option>
+                  </select>
+                  <input
                     type="text"
                     id="inlinePostWorkOrder"
                     placeholder="Work Order #"
@@ -636,24 +643,53 @@
                     class="form-control"
                   />
                 </div>
-                <div
-                  class="new-post-actions"
-                  style="display: flex; gap: 12px; justify-content: flex-end"
-                >
+                <!-- Photo Upload Area -->
+                <div class="form-group">
+                  <label>Add Photos</label>
+                  <div
+                    class="photo-upload-area"
+                    onclick="document.getElementById('feedPhotoInput').click()"
+                  >
+                    <i class="fas fa-camera"></i>
+                    <span>Click to add photos</span>
+                    <input
+                      type="file"
+                      id="feedPhotoInput"
+                      accept="image/*"
+                      multiple
+                      style="display: none"
+                      onchange="previewFeedPhotos(this)"
+                    />
+                  </div>
+                  <div
+                    id="photoPreviewContainer"
+                    class="photo-preview-container"
+                  ></div>
+                </div>
+                <div class="new-post-actions">
                   <button
                     class="btn btn-secondary"
                     onclick="toggleInlinePostForm()"
                   >
-                    Cancel</button
-                  ><button class="btn btn-primary" onclick="submitInlinePost()">
+                    Cancel
+                  </button>
+                  <button class="btn btn-primary" onclick="submitInlinePost()">
                     Post
                   </button>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Feed Posts Container -->
           <div class="feed-posts-container" id="feedPostsContainer">
             <div class="feed-posts" id="feedPosts"></div>
+            <div
+              id="feedLoadingIndicator"
+              style="text-align: center; padding: 40px"
+            >
+              <i class="fas fa-spinner fa-pulse"></i> Loading...
+            </div>
           </div>
         </div>
 
