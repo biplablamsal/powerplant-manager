@@ -555,6 +555,7 @@
         </div>
 
         <!-- PAGE: MAINTENANCE FEED - Instagram Style -->
+        <!-- PAGE: MAINTENANCE FEED - Instagram Style with Bottom Post Button -->
         <div class="page-content page" id="page-feed">
           <div class="page-header">
             <div>
@@ -563,17 +564,31 @@
               </div>
               <div class="page-subtitle">Real-time updates from the team</div>
             </div>
-            <div>
-              <button
-                class="btn btn-primary btn-sm"
-                onclick="toggleInlinePostForm()"
-              >
-                <i class="fas fa-plus-circle"></i> New Post
-              </button>
+          </div>
+
+          <!-- Feed Posts Container -->
+          <div class="feed-posts-container" id="feedPostsContainer">
+            <div class="feed-posts" id="feedPosts"></div>
+            <div
+              id="feedLoadingIndicator"
+              style="text-align: center; padding: 40px"
+            >
+              <i class="fas fa-spinner fa-pulse"></i> Loading...
             </div>
           </div>
 
-          <!-- New Post Form -->
+          <!-- New Post Button - Bottom (Like Facebook) -->
+          <div class="feed-bottom-actions">
+            <button
+              class="feed-create-post-btn"
+              onclick="toggleInlinePostForm()"
+            >
+              <i class="fas fa-plus-circle"></i>
+              <span>Create New Post</span>
+            </button>
+          </div>
+
+          <!-- New Post Form (Hidden by default, appears above the button) -->
           <div
             class="inline-post-form"
             id="inlinePostForm"
@@ -678,17 +693,6 @@
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Feed Posts Container -->
-          <div class="feed-posts-container" id="feedPostsContainer">
-            <div class="feed-posts" id="feedPosts"></div>
-            <div
-              id="feedLoadingIndicator"
-              style="text-align: center; padding: 40px"
-            >
-              <i class="fas fa-spinner fa-pulse"></i> Loading...
             </div>
           </div>
         </div>

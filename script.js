@@ -439,7 +439,9 @@ async function loadMaintenanceFeed() {
     container.innerHTML = "";
 
     // Load posts from localStorage instead of external API
-    let posts = JSON.parse(localStorage.getItem("maintenance_feed_posts") || "[]");
+    let posts = JSON.parse(
+      localStorage.getItem("maintenance_feed_posts") || "[]",
+    );
 
     // If no posts exist, use sample data
     if (posts.length === 0) {
@@ -447,51 +449,54 @@ async function loadMaintenanceFeed() {
         {
           id: 1,
           userId: "user1",
-          userName: "Rajesh Kumar",
-          userRole: "Plant Incharge",
-          avatar: "RK",
+          author: "Rajesh Kumar",
+          authorRole: "Plant Incharge",
+          authorAvatar: "RK",
           timestamp: new Date(Date.now() - 3600000).toISOString(),
           title: "Unit 2 Generator Bearing Replacement Completed",
-          description: "Successfully replaced the upper guide bearing on Unit 2. Bearing temperature now within optimal range.",
+          description:
+            "Successfully replaced the upper guide bearing on Unit 2. Bearing temperature now within optimal range.",
           equipment: "Unit 2 Generator",
           type: "complete",
           tags: ["bearing", "unit2", "maintenance"],
           likes: [],
           comments: [],
-          photos: []
+          photos: [],
         },
         {
           id: 2,
           userId: "user2",
-          userName: "Prakash Thapa",
-          userRole: "Technician",
-          avatar: "PT",
+          author: "Prakash Thapa",
+          authorRole: "Technician",
+          authorAvatar: "PT",
           timestamp: new Date(Date.now() - 7200000).toISOString(),
           title: "Unit 3 Governor Quarterly Service Due",
-          description: "Reminder: Unit 3 Governor quarterly service is due this week. Pre-inspection checklist completed.",
+          description:
+            "Reminder: Unit 3 Governor quarterly service is due this week. Pre-inspection checklist completed.",
           equipment: "Unit 3 Governor",
           type: "update",
           tags: ["governor", "unit3", "urgent"],
           likes: [],
           comments: [],
-          photos: []
+          photos: [],
         },
         {
           id: 3,
           userId: "user3",
-          userName: "Nirmala Sharma",
-          userRole: "Technician",
-          avatar: "NS",
+          author: "Nirmala Sharma",
+          authorRole: "Technician",
+          authorAvatar: "NS",
           timestamp: new Date(Date.now() - 86400000).toISOString(),
           title: "Water Intake Gate Valve Inspection",
-          description: "Completed weekly inspection of intake gate valves. All readings nominal, no issues detected.",
+          description:
+            "Completed weekly inspection of intake gate valves. All readings nominal, no issues detected.",
           equipment: "Water Intake",
           type: "inspection",
           tags: ["intake", "inspection", "water"],
           likes: [],
           comments: [],
-          photos: []
-        }
+          photos: [],
+        },
       ];
       localStorage.setItem("maintenance_feed_posts", JSON.stringify(posts));
     }
@@ -547,16 +552,27 @@ function createFeedPostElement(post) {
   const likes = post.likes || [];
   const comments = post.comments || [];
   const photos = post.photos || [];
+  const authorName = post.author || post.userName || "Unknown";
+  const authorRole = post.authorRole || post.userRole || "operator";
+  const normalizedRole = String(authorRole).toLowerCase().replace(/\s+/g, "_");
+  const authorAvatar =
+    post.authorAvatar || post.avatar || authorName.charAt(0) || "U";
   const isLiked = likes.some((like) => like.userId === feedCurrentUser?.id);
+  const tags = Array.isArray(post.tags)
+    ? post.tags
+    : String(post.tags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
 
   // Header
   const header = `
     <div class="feed-post-header">
-      <div class="feed-post-avatar" style="background: ${getAvatarColorByRole(post.authorRole)}">
-        ${post.authorAvatar || post.author.charAt(0)}
+      <div class="feed-post-avatar" style="background: ${getAvatarColorByRole(normalizedRole)}">
+        ${authorAvatar}
       </div>
       <div class="feed-post-author-info">
-        <div class="feed-post-author">${escapeHtml(post.author)}</div>
+        <div class="feed-post-author">${escapeHtml(authorName)}</div>
         <div class="feed-post-time">
           ${formatTimeAgo(post.timestamp)}
           <span class="feed-post-badge ${post.type || "update"}">${getPostTypeLabel(post.type)}</span>
@@ -594,13 +610,10 @@ function createFeedPostElement(post) {
       ${post.equipment ? `<div class="caption-equipment"><i class="fas fa-microchip"></i> ${escapeHtml(post.equipment)}</div>` : ""}
       <div class="caption-text">${escapeHtml(post.description || "")}</div>
       ${
-        post.tags
+        tags.length > 0
           ? `
         <div class="caption-tags">
-          ${post.tags
-            .split(",")
-            .map((tag) => `<span class="caption-tag">#${tag.trim()}</span>`)
-            .join("")}
+          ${tags.map((tag) => `<span class="caption-tag">#${escapeHtml(tag)}</span>`).join("")}
         </div>
       `
           : ""
@@ -698,14 +711,16 @@ function createFeedPostElement(post) {
 
 // Helper Functions
 function getAvatarColorByRole(role) {
+  const normalized = String(role).toLowerCase().replace(/\s+/g, "_");
   const colors = {
     super_admin: "#e24b4a",
     plant_incharge: "#4a9de8",
     headworks_incharge: "#29c48f",
     operator: "#f5ae3a",
+    technician: "#f5ae3a",
     viewer: "#9f7aea",
   };
-  return colors[role] || "#576170";
+  return colors[normalized] || "#576170";
 }
 
 function getPostTypeLabel(type) {
@@ -1766,3 +1781,25 @@ window.showForgotPassword = showForgotPassword;
 window.closeForgotModal = closeForgotModal;
 
 console.log("HydroPlant Manager - Ready!");
+
+// Add this to your initFeedSystem function
+function initFeedSystem() {
+  feedCurrentUser = UserDB?.currentUser;
+  console.log(
+    "Feed system initialized for user:",
+    feedCurrentUser?.fullName || "No user",
+  );
+
+  // Update quick post avatar if it exists
+  const quickPostAvatar = document.getElementById("quickPostAvatar");
+  if (quickPostAvatar && feedCurrentUser) {
+    quickPostAvatar.textContent = feedCurrentUser.fullName?.charAt(0) || "U";
+  }
+
+  const quickPostInput = document.querySelector(".feed-quick-post-input");
+  if (quickPostInput && feedCurrentUser) {
+    quickPostInput.innerHTML = `What's on your mind, ${feedCurrentUser.fullName?.split(" ")[0] || "there"}?`;
+  }
+
+  loadMaintenanceFeed();
+}
